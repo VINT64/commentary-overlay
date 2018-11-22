@@ -1,0 +1,66 @@
+/* By: VINT64
+All code copied from Stack Overflow and
+other places keeps its respective licenses.
+All original code is unlicensed (more info
+https://unlicense.org ) */
+div#controlPanel {
+	text-align: center;
+}
+.upperRight {
+	text-align: right;
+	position: fixed;
+	right: 0px;
+	margin: 0 10px;
+}
+
+div#controlPanel > p {
+	margin: 10px 0;
+}
+input#fileInput {
+	visibility: hidden;
+	position: absolute;
+}
+div#gallery {
+	text-align: center;
+}
+div#imageDiv {
+	display: inline-block;
+	vertical-align: middle;
+}
+
+/*
+button.nav {
+	height: 100%;
+}
+*/
+div#allCommentsDiv {
+	position: absolute;
+}
+div.commentDiv {
+	border: 1px solid #000;
+	background: #fff;
+	position: absolute;
+	padding: 4px;
+}
+div.commentOverlayDiv {
+	border: 1px solid #000;
+	background: rgba(255, 255, 255, 0.5);
+	position: absolute;
+}
+/* editor-specific part */
+
+div#canvasDiv {
+	vertical-align: middle;
+	background: transparent;
+	display: inline-block;
+	position: absolute;
+	border: 5px solid #000;
+}
+div.canvasOverlayDiv {
+	cursor: pointer;
+}
+
+div.selected {
+	border: 1px solid #0078d7;
+	background: rgba(0, 120, 215, 0.5);
+}
