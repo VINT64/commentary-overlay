@@ -6,7 +6,7 @@ https://unlicense.org ) */
 
 const MAGIC_NUMBER = 64; // should be large
 const IMAGE_ID = 'img';
-
+const DEFAULT_LAYER_NAME = 'default';
 const regexp = {
 	extension: /(?:\.([^.]+))?$/, 
 	filename: /(?:([^\/]+))?\.[^.]+$/, // without ext
@@ -78,16 +78,29 @@ const templates = {
 						'id="loadButton" ' +
 						'onclick="triggerFileInput()">' +
 					'</button>' +
+					'<span id="fileInfo"></span>' +
 					'<button type="button" ' +
 						'id="hideImageButton" ' +
 						'onclick="clearImage()">' +
 					'</button>' +
 				'</p>' +
 				'<p>' +
-					'<span id="fileInfo"></span>' +
+					'<label for="layerInput" ' +
+						'id="layerLabel">' +
+					'</label>' +
+					'<input type="text" ' +
+					'id="layerInput">' +
 					'<select id="layerSelect" ' +
 						'onchange="updateLayer()">' +
 					'</select>' +
+					'<button type="button" ' +
+						'id="addLayerButton" ' +
+						'onclick="addEmptyLayer()">' +
+					'</button>' +
+					'<button type="button" ' +
+						'id="removeLayerButton" ' +
+						'onclick="removeCurrentLayer()">' +
+					'</button>' +
 				'</p>' +
 				'<p>' +
 					'<input type="number" ' +
@@ -97,8 +110,8 @@ const templates = {
 						'id="heightInput" ' +
 						'min="1" value="512">' +
 					'<button type="button" ' +
-						'id="removeCommentsButton" ' +
-						'onclick="clearAllComments()">' +
+						'id="removeAllCommentsButton" ' +
+						'onclick="clearCanvas()">' +
 					'</button>' +
 					'<button type="button" ' +
 						'id="saveJsonButton" ' +
@@ -135,7 +148,8 @@ const templates = {
 
 const page = { imageDiv: null,
 	fileInput: null, allCommentsDiv: null,
-	layerSelect: null, fileInfo: null, canvasDiv: null,
+	layerInput: null, layerSelect: null,
+	fileInfo: null, canvasDiv: null,
 	coordinatesInfo: null, widthInput: null,
 	heightInput: null, commentInput: null,
 	selectedComment: null, removeCommentButton: null,
@@ -143,8 +157,8 @@ const page = { imageDiv: null,
 };
 
 const memory = { zip: null,
-	filenames: {images: [], comments: []},
-	currentLayers: [], currentFile: 0, counter: 0
+	filenames: {images: [], comments: []}, fileLayers: [],
+	currentFile: 0, currentLayer: 0, counter: 0, 
 };
 
 let currentLanguage = '';
@@ -156,13 +170,18 @@ const langs = [
 		editorButton: 'Перейти в редактор',
 		viewerButton: 'Перейти в просмотрщик',
 		hideImageButton: 'Спрятать изображение',
-		removeCommentsButton: 'Удалить все комментарии',
+		removeAllCommentsButton: 'Удалить все комментарии',
+		addLayerButton: 'Новый слой',
+		removeLayerButton: 'Удалить слой',
 		saveJsonButton: 'Сохранить комментарии',
 		removeCommentButton: 
 			'Удалить выбранный комментарий',
 		commentLabel: 'Комментарий: ',
+		layerLabel: 'Слой: ',
+		removeLayerConfirm: 'Удалить текущий слой?',
 		removeAllCommentsConfirm: 
 			'Удалить все комментарии?',
+		lastLayerAlert: 'Нельзя удалить последний слой',
 		noImagesAlert: 'В этом архиве нет изображений!',
 		notImageOrZipAlert: 'Не изображение и не архив!'
 	},
@@ -172,11 +191,16 @@ const langs = [
 		editorButton: 'Editor',
 		viewerButton: 'Viewer',
 		hideImageButton: 'Hide image',
-		removeCommentsButton: 'Remove all commentaries',
+		removeAllCommentsButton: 'Remove all commentaries',
+		addLayerButton: 'New layer',
+		removeLayerButton: 'Delete layer',
 		saveJsonButton: 'Save commentaries',
 		removeCommentButton: 'Remove selected',
 		commentLabel: 'Commentary: ',
+		layerLabel: 'Layer: ',
+		removeLayerConfirm: 'Delete current layer?',
 		removeAllCommentsConfirm: 'Remove all comments?',
+		lastLayerAlert: 'Cannot delete last layer',
 		noImagesAlert: 'No images in this archive!',
 		notImageOrZipAlert: 'Not an image or zip!'
 	}
@@ -252,6 +276,10 @@ function getCommentAndOverlay(comId){
 
 function newElement(tag){
 	return document.createElement(tag);
+}
+
+function newLayer(n, d){
+	return {name: n, divs: d};
 }
 
 function newComment(comId, x, y, text, el){
@@ -379,14 +407,20 @@ function clearAllComments(){
 		}
 	}
 	if (page.canvasDiv){
-		if (!confirm(getLanguagePhrase(
-			'removeAllCommentsConfirm'))) return;
 		while (page.canvasDiv.firstChild) {
 			page.canvasDiv.removeChild(
 				page.canvasDiv.firstChild);
 		}
 		deselectComment();
 	}
+}
+
+function clearCanvas(){
+	if (!page.canvasDiv)
+		return;
+	if (!confirm(getLanguagePhrase(
+		'removeAllCommentsConfirm'))) return;
+	clearAllComments();
 }
 
 function clearImage(){
@@ -408,27 +442,52 @@ function clearImage(){
 	}
 }
 	
-function removeCurrentLayers(){
-	memory.currentLayers = [];
+function removefileLayers(){
+	memory.fileLayers = [];
 	if (!page.layerSelect) return;
 	for (let i = page.layerSelect.options.length - 1;
 		i >= 0; i--)
-		page.layerSelect.options[i] = null;
+		page.layerSelect.remove(i);
+}
+
+function saveCanvasToMemory(){
+	if (!page.canvasDiv)
+		return;
+	let currentLayer = memory.fileLayers[
+		memory.currentLayer];
+	currentLayer.divs = [];
+	for (let i = page.canvasDiv.children.length - 1;
+		i >= 0; i--)
+		currentLayer.divs.push(page.canvasDiv.children[i]);
+	
+	
 }
 
 function selectLayer(i){
-	if (i < 0 || i >= memory.currentLayers.length){
+	if (i < 0 || i >= memory.fileLayers.length){
 		console.log('Tried to select layer: ' + i +
 			', number of layers: ' + 
-			memory.currentLayers.length);
+			memory.fileLayers.length);
 		return;
 	}
+	saveCanvasToMemory();
+	
+	memory.currentLayer = i;
+	clearAllComments()
 	if (page.allCommentsDiv){
-		clearAllComments();
-		memory.currentLayers[i].divs
+		memory.fileLayers[i].divs
 			.forEach((div, n, a) => {
 				page.allCommentsDiv.appendChild(div);
 		});
+	}
+	if (page.canvasDiv){
+		memory.fileLayers[i].divs
+			.forEach((div, n, a) => {
+				page.canvasDiv.appendChild(div);
+		});
+	}
+	if (page.layerInput){
+		page.layerInput.value =	memory.fileLayers[i].name;
 	}
 }
 
@@ -438,11 +497,50 @@ function updateLanguage(){
 	setPageLanguage();
 }
 
+function addLayer(name, divs){
+	let l = newLayer(name, divs);
+	if (page.layerSelect){
+		let option = newElement('option');
+		option.text = name;
+		page.layerSelect.add(option);
+	}
+	memory.fileLayers.push(l);
+}
+
+function addEmptyLayer(){
+	addLayer(DEFAULT_LAYER_NAME, []);
+}
+
+function removeCurrentLayer(){
+	if (!page.layerSelect)
+		return;
+	if (page.layerSelect.length == 1){
+		alert(getLanguagePhrase('lastLayerAlert'));
+		return;
+	}
+	if (!confirm(getLanguagePhrase('removeLayerConfirm')))
+		return;
+	memory.fileLayers
+		.splice(page.layerSelect.selectedIndex, 1);
+	page.layerSelect.remove(
+		page.layerSelect.selectedIndex);
+	selectLayer(page.layerSelect.selectedIndex);
+}
+
+function renameCurrentLayer(name){
+	if (!page.layerSelect)
+		return;
+	page.layerSelect.options[
+		page.layerSelect.selectedIndex].text = name;
+		memory.fileLayers[
+			page.layerSelect.selectedIndex].name = name;
+}
+
 function updateLayer(){ 
 	if (!page.layerSelect) return;
-	for( let i = memory.currentLayers.length - 1;
+	for( let i = memory.fileLayers.length - 1;
 		i >= 0; i--){
-			if (memory.currentLayers[i].name ==
+			if (memory.fileLayers[i].name ==
 				page.layerSelect.value){
 					selectLayer(i);
 					return;
@@ -480,7 +578,7 @@ function manageLoadedImage(event){
 
 function manageLoadedJson(event){
 	
-	function addComment(jsonComment, layer, comId){
+	function addComment(jsonComment, list, comId){
 		let commentOverlay = newElement('div');
 		commentOverlay.classList.add('commentOverlayDiv');
 		commentOverlay.setAttribute('comId', comId);
@@ -493,20 +591,17 @@ function manageLoadedJson(event){
 		let comment = newComment(comId, jsonComment.x1,
 			jsonComment.y2 + 5, jsonComment.text,
 			commentOverlay);
-		layer.divs.push(commentOverlay, comment);
+		list.push(commentOverlay, comment);
 	}
 	
-	removeCurrentLayers();
+	removefileLayers();
 	let json = JSON.parse(event.target.result);
 	json.layers.forEach((jsonLayer, i, a) => {
-		let l = {name: jsonLayer.layer_name, divs: []};
+		let divs = [];
 		jsonLayer.comments.forEach((json, j, ar) => {
-			addComment(json, l, j);
+			addComment(json, divs, j);
 		});
-		let option = newElement('option');
-		option.text = jsonLayer.layer_name;
-		page.layerSelect.add(option);
-		memory.currentLayers.push(l);
+		addLayer(jsonLayer.layer_name, divs);
 	});
 	selectLayer(0);		
 }
@@ -520,7 +615,7 @@ function loadZip(){
 			return;
 		}
 		clearAllComments();
-		removeCurrentLayers();
+		removefileLayers();
 	}
 	
 	let f = page.fileInput.files[0];
@@ -580,45 +675,64 @@ function loadZip(){
 }
 
 function saveJson(){
-	if (!page.canvasDiv || !page.widthInput ||
-		!page.heightInput) return;
-	let filename = '';
-	if (memory.filenames.images.length > 0){
-		filename = regexp.filename.exec(
-			memory.filenames.images[memory.currentFile]
-		)[1];
-	}
-	let coms = [];
-	let l = page.canvasDiv.querySelectorAll('.commentDiv');
-	for(let i = l.length - 1; i >= 0; i--){
-		let com = getCommentAndOverlay(
-			l[i].getAttribute('comId'));
-		if (!com.overlayDiv || !com.commentDiv)
-			continue;
-		let x = parseInt(com.overlayDiv.style.left);
-		let y = parseInt(com.overlayDiv.style.top);
-		let w = parseInt(com.overlayDiv.style.width);
-		let h = parseInt(com.overlayDiv.style.height);
-		coms.push({x1: x, y1: y, x2: x + w, y2: y + h,
-			text: com.commentDiv.textContent});
+	
+	function divsToComs(divs){
+		//unify with getCommentAndOverlay
+		let coms = [];
+		let l = divs.filter(div => 
+			div.classList.contains('commentDiv')
+		);
+		for(let i = l.length - 1; i >= 0; i--){
+			let comId = l[i].getAttribute('comId');
+			let com = {overlayDiv: null, commentDiv: null};
+			for (let j = divs.length - 1; j >= 0; j--)
+				if (divs[j].matches(
+					'[comId="' + comId + '"]')){
+					if (divs[j].classList.contains(
+						'commentDiv'))
+						com.commentDiv = divs[j];
+					if (divs[j].classList.contains(
+						'commentOverlayDiv'))
+						com.overlayDiv = divs[j];
+				}
+			if (!com.overlayDiv || !com.commentDiv)
+				continue;
+			let x = parseInt(com.overlayDiv.style.left);
+			let y = parseInt(com.overlayDiv.style.top);
+			let w = parseInt(com.overlayDiv.style.width);
+			let h = parseInt(com.overlayDiv.style.height);
+			coms.push({x1: x, y1: y, x2: x + w, y2: y + h,
+				text: com.commentDiv.textContent});
+		}
+		return coms;
 	}
 	
+	if (!page.canvasDiv || !page.widthInput ||
+		!page.heightInput) return;
+	
+	saveCanvasToMemory();
+	
+	let filename = '';
+	if (memory.filenames.images.length > 0){
+		filename = regexp.filename.exec(memory.filenames
+			.images[memory.currentFile])[1];
+	}
+	let layers = []
+	for (let i = 0; i < memory.fileLayers.length; i++){
+		let l = memory.fileLayers[i];
+		let coms = divsToComs(l.divs);
+		layers.push({layer_name: l.name, comments: coms});
+	}
 	let obj = {version: 1, image_name: filename,
 		image_width: page.widthInput.value,
 		image_height: page.heightInput.value,
-		layers: [{layer_name: 'default', comments: coms}]};
-		
+		layers: layers};
 	let blob = new Blob([JSON.stringify(obj)],
 		{type: 'application/json'});
 	saveAs(blob, filename + '.json');
 }
 
 function initCanvas() {
-	
-	if(!page.canvasDiv) return;
-	let mouse = { x: 0, y: 0, startX: 0,
-		startY: 0, offsetX: 0, offsetY: 0};
-	let drawing = null;
 	
 	function updateMouseOffset(){
 		mouse.offsetX = 0;
@@ -678,6 +792,71 @@ function initCanvas() {
 		};
 	}
 	
+	if(!page.canvasDiv) 
+		return;
+	
+	let mouse = { x: 0, y: 0, startX: 0,
+		startY: 0, offsetX: 0, offsetY: 0};
+	let drawing = null;
+	
+	if (page.imageDiv){
+		const style = getComputedStyle(page.canvasDiv);
+		page.imageDiv.style.padding = 
+			style.borderWidth;
+	}
+	if (page.commentInput){
+		page.commentInput.setAttribute('disabled', true);
+		page.commentInput.oninput = () => {
+			if (!page.selectedComment) return;
+			let com = getCommentAndOverlay(
+				page.selectedComment
+					.getAttribute('comId'));
+			if (!com.commentDiv) return;
+			com.commentDiv.textContent =
+				commentInput.value;
+		};
+	}
+	if (page.removeCommentButton){
+		page.removeCommentButton
+			.setAttribute('disabled', true);
+	}
+	if (page.widthInput){
+		page.canvasDiv.style.width = 
+			page.widthInput.value + 'px';
+		page.imageDiv.style.width = 
+			page.widthInput.value + 'px';
+		page.widthInput.addEventListener('input', 
+			() => {
+			page.canvasDiv.style.width = 
+				page.widthInput.value + 'px';
+			page.imageDiv.style.width = 
+				page.widthInput.value + 'px';
+			}
+		);
+	}
+	if (page.heightInput){
+		page.canvasDiv.style.height = 
+			page.heightInput.value + 'px';
+		page.imageDiv.style.height = 
+			page.heightInput.value + 'px';
+		page.heightInput.addEventListener('input', 
+			() => {
+				page.canvasDiv.style.height = page.heightInput.value + 'px';
+				page.imageDiv.style.height = page.heightInput.value + 'px';
+			}
+		);
+	}
+	if (page.layerSelect){
+		if (page.layerSelect.length == 0){
+			addEmptyLayer();
+			selectLayer(0);
+		}
+		if (page.layerInput){
+			page.layerInput.oninput = () => {
+				renameCurrentLayer(page.layerInput.value);
+			};
+		}
+	}
 	page.canvasDiv.onmousemove = (e) => {
 		updateMouseOffset();
 		setMousePosition(e);
@@ -738,57 +917,7 @@ function initPage(){
 					'none') ? 'block' : 'none';
 		});
 	}
-	if (page.canvasDiv){
-		if (page.imageDiv){
-			const style = getComputedStyle(page.canvasDiv);
-			page.imageDiv.style.padding = 
-				style.borderWidth;
-		}
-		if (page.commentInput){
-			page.commentInput.setAttribute('disabled', true);
-			page.commentInput.oninput = () => {
-				if (!page.selectedComment) return;
-				let com = getCommentAndOverlay(
-					page.selectedComment
-						.getAttribute('comId'));
-				if (!com.commentDiv) return;
-				com.commentDiv.textContent =
-					commentInput.value;
-			};
-		}
-		if (page.removeCommentButton){
-			page.removeCommentButton
-				.setAttribute('disabled', true);
-		}
-		if (page.widthInput){
-			page.canvasDiv.style.width = 
-				page.widthInput.value + 'px';
-			page.imageDiv.style.width = 
-				page.widthInput.value + 'px';
-			page.widthInput.addEventListener('input', 
-				() => {
-				page.canvasDiv.style.width = 
-					page.widthInput.value + 'px';
-				page.imageDiv.style.width = 
-					page.widthInput.value + 'px';
-				}
-			);
-		}
-		if (page.heightInput){
-			page.canvasDiv.style.height = 
-				page.heightInput.value + 'px';
-			page.imageDiv.style.height = 
-				page.heightInput.value + 'px';
-			page.heightInput.addEventListener('input', 
-				() => {
-					page.canvasDiv.style.height = page.heightInput.value + 'px';
-					page.imageDiv.style.height = page.heightInput.value + 'px';
-				}
-			);
-		}
-		
-		initCanvas();
-	}
+	initCanvas();
 	if (page.fileInput){
 		page.fileInput
 			.addEventListener('change',	loadZip);
@@ -820,7 +949,7 @@ function launch(mode){
 		memory.zip = null;
 		memory.filenames.images = [];
 		memory.filenames.comments = [];
-		memory.currentLayers = [];
+		memory.fileLayers = [];
 		memory.currentFile = 0;
 		memory.counter = 0;
 	}
