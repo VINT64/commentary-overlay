@@ -470,8 +470,6 @@ function selectLayer(i){
 			memory.fileLayers.length);
 		return;
 	}
-	saveCanvasToMemory();
-	
 	memory.currentLayer = i;
 	clearAllComments()
 	if (page.allCommentsDiv){
@@ -538,15 +536,32 @@ function renameCurrentLayer(name){
 
 function updateLayer(){ 
 	if (!page.layerSelect) return;
+	
+	saveCanvasToMemory();
+	
 	for( let i = memory.fileLayers.length - 1;
 		i >= 0; i--){
 			if (memory.fileLayers[i].name ==
 				page.layerSelect.value){
-					selectLayer(i);
+					selectLayer(i, true);
 					return;
 			}
 	}
 	console.log('Unknown layer: ', page.layerSelect.value);
+}
+
+function addCanvasDefaultFile(){
+	addEmptyLayer();
+	selectLayer(0);
+}
+
+function addSelectCommentListener(el){
+	el.onmousedown = (e) => {
+		e.stopPropagation();
+	};
+	el.onmouseup = (e) => {
+		selectComment(el);
+	};
 }
 
 function manageLoadedImage(event){
@@ -588,6 +603,11 @@ function manageLoadedJson(event){
 			jsonComment.x1) + 'px';
 		commentOverlay.style.height = (jsonComment.y2 -
 			jsonComment.y1) + 'px';
+		if (page.canvasDiv){
+			commentOverlay.classList
+				.add('canvasOverlayDiv');
+			addSelectCommentListener(commentOverlay);
+		}
 		let comment = newComment(comId, jsonComment.x1,
 			jsonComment.y2 + 5, jsonComment.text,
 			commentOverlay);
@@ -610,10 +630,6 @@ function loadZip(){
 	
 	function clean(){ 
 		clearImage();
-		if (memory.filenames.comments.length == 0){
-			//if editor mode - don't touch layers
-			return;
-		}
 		clearAllComments();
 		removefileLayers();
 	}
@@ -633,6 +649,7 @@ function loadZip(){
 			selectFile(0);
 		}
 		reader.singleImage.readAsBinaryString(f);
+		addCanvasDefaultFile();
 		return;
 	}
 		
@@ -652,10 +669,6 @@ function loadZip(){
 			alert(getLanguagePhrase('noImagesAlert'));
 			return;
 		}
-		if (tempFiles.images.length !=
-			tempFiles.comments.length || page.canvasDiv){
-			tempFiles.comments = [];
-		}		
 		
 		tempFiles.comments.sort();
 		tempFiles.images.sort();
@@ -663,6 +676,15 @@ function loadZip(){
 		clean();
 		
 		memory.filenames = tempFiles;
+		if (memory.filenames.images.length !=
+			memory.filenames.comments.length){
+			console.log('Number of comment files: ' +
+				memory.filenames.comments.length);
+			memory.filenames.comments = [];
+			addCanvasDefaultFile();
+		}		
+		
+		
 		memory.zip = z; 
 		
 		selectFile(0);
@@ -784,12 +806,7 @@ function initCanvas() {
 			parseInt(el.style.height) + 5, '', el);
 		memory.counter++;
 		page.canvasDiv.appendChild(com);
-		el.onmousedown = (e) => {
-			e.stopPropagation();
-		};
-		el.onmouseup = (e) => {
-			selectComment(el);
-		};
+		addSelectCommentListener(el);
 	}
 	
 	if(!page.canvasDiv) 
@@ -848,8 +865,7 @@ function initCanvas() {
 	}
 	if (page.layerSelect){
 		if (page.layerSelect.length == 0){
-			addEmptyLayer();
-			selectLayer(0);
+			addCanvasDefaultFile();
 		}
 		if (page.layerInput){
 			page.layerInput.oninput = () => {
@@ -951,6 +967,7 @@ function launch(mode){
 		memory.filenames.comments = [];
 		memory.fileLayers = [];
 		memory.currentFile = 0;
+		memory.currentLayer = 0;
 		memory.counter = 0;
 	}
 	
