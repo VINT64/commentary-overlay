@@ -7,10 +7,12 @@ https://unlicense.org ) */
 const MAGIC_NUMBER = 64; // should be large
 const IMAGE_ID = 'img';
 const DEFAULT_LAYER_NAME = 'default';
+const DEFAULT_ROOT_NAME = 'root';
 const regexp = {
 	extension: /(?:\.([^.]+))?$/, 
-	filename: /(?:([^\/]+))?\.[^.]+$/, // without ext
-	imageMime: /^(image\/)/
+	filename: /([^\/]+)(?:\.[^.\/]+)$/, // without ext
+	imageMime: /^(image\/)/,
+	path: /(.+\/)?(?:[^\/]+)?/
 };
 
 const templates = {
@@ -37,7 +39,7 @@ const templates = {
 				'<p>' +
 					'<span id="fileInfo"></span>' +
 					'<select id="layerSelect" ' +
-						'onchange="updateLayer()">' +
+					'onchange="saveAndUpdateLayer()">' +
 					'</select>' +
 				'</p>' +
 			'</div>' +
@@ -91,7 +93,7 @@ const templates = {
 					'<input type="text" ' +
 					'id="layerInput">' +
 					'<select id="layerSelect" ' +
-						'onchange="updateLayer()">' +
+					'onchange="saveAndUpdateLayer()">' +
 					'</select>' +
 					'<button type="button" ' +
 						'id="addLayerButton" ' +
@@ -116,6 +118,10 @@ const templates = {
 					'<button type="button" ' +
 						'id="saveJsonButton" ' +
 						'onclick="saveJson()">' +
+					'</button>' +
+					'<button type="button" ' +
+						'id="saveZipButton" ' +
+						'onclick="saveZip()">' +
 					'</button>' +
 				'</p>' +
 				'<p>' +
@@ -176,6 +182,8 @@ const langs = [
 		saveJsonButton: 'Сохранить комментарии',
 		removeCommentButton: 
 			'Удалить выбранный комментарий',
+		saveZipButton:
+			'Сохранить архив',
 		commentLabel: 'Комментарий: ',
 		layerLabel: 'Слой: ',
 		removeLayerConfirm: 'Удалить текущий слой?',
@@ -196,6 +204,7 @@ const langs = [
 		removeLayerButton: 'Delete layer',
 		saveJsonButton: 'Save commentaries',
 		removeCommentButton: 'Remove selected',
+		saveZipButton: 'Save Archive',
 		commentLabel: 'Commentary: ',
 		layerLabel: 'Layer: ',
 		removeLayerConfirm: 'Delete current layer?',
@@ -353,15 +362,15 @@ function triggerFileInput(){
 function goLeft(){
 	if (memory.filenames.images.length == 0) return;
 	(memory.currentFile - 1 < 0) ?
-		selectFile(memory.filenames.images.length - 1) :
-		selectFile(memory.currentFile - 1);
+		saveAndSelectFile(memory.filenames.images.length - 1) :
+		saveAndSelectFile(memory.currentFile - 1);
 }
 
 function goRight(){
 	if (memory.filenames.images.length == 0) return;
 	(memory.currentFile + 1 >=
-		memory.filenames.images.length) ? selectFile(0) :
-		selectFile(memory.currentFile + 1);
+		memory.filenames.images.length) ? saveAndSelectFile(0) :
+		saveAndSelectFile(memory.currentFile + 1);
 }
 
 function selectFile(i){ 
@@ -397,6 +406,84 @@ function selectFile(i){
 				(error) => {console.log(e.message);}
 			);
 	}
+}
+
+function divsToComs(divs){
+	//unify with getCommentAndOverlay
+	let coms = [];
+	let l = divs.filter(div => 
+		div.classList.contains('commentDiv')
+	);
+	for(let i = l.length - 1; i >= 0; i--){
+		let comId = l[i].getAttribute('comId');
+		let com = {overlayDiv: null, commentDiv: null};
+		for (let j = divs.length - 1; j >= 0; j--)
+			if (divs[j].matches(
+				'[comId="' + comId + '"]')){
+				if (divs[j].classList.contains(
+					'commentDiv'))
+					com.commentDiv = divs[j];
+				if (divs[j].classList.contains(
+					'commentOverlayDiv'))
+					com.overlayDiv = divs[j];
+			}
+		if (!com.overlayDiv || !com.commentDiv)
+			continue;
+		let x = parseInt(com.overlayDiv.style.left);
+		let y = parseInt(com.overlayDiv.style.top);
+		let w = parseInt(com.overlayDiv.style.width);
+		let h = parseInt(com.overlayDiv.style.height);
+		coms.push({x1: x, y1: y, x2: x + w, y2: y + h,
+			text: com.commentDiv.textContent});
+	}
+	return coms;
+}
+
+function saveCanvasToMemory(){
+	if (!page.canvasDiv)
+		return;
+	let currentLayer = memory.fileLayers[
+		memory.currentLayer];
+	currentLayer.divs = [];
+	for (let i = page.canvasDiv.children.length - 1;
+		i >= 0; i--)
+		currentLayer.divs.push(page.canvasDiv.children[i]);
+	
+	
+}
+
+function saveMemoryToZip(){
+
+	return new Promise((resolve, reject) => {
+		let f = new FileReader();
+		f.onload = (e) => {
+			file = JSON.parse(event.target.result);
+			let layers = [];
+			for (let i = 0; i < memory.fileLayers.length; i++){
+				let l = memory.fileLayers[i];
+				let coms = divsToComs(l.divs);
+				layers.push({layer_name: l.name,
+					comments: coms});
+			}
+			file.layers = layers;
+			memory.zip.file(memory.filenames.comments[
+			memory.currentFile], JSON.stringify(file));
+			resolve();
+		};
+		memory.zip.file(memory.filenames.comments[
+			memory.currentFile])
+			.async('blob').then((blob) => {
+				f.readAsText(blob);
+			},
+			(error) => {console.log(e.message);}
+		);
+		
+	});
+}
+
+function saveAndSelectFile(index){
+	saveCanvasToMemory();
+	saveMemoryToZip().then(() => selectFile(index));
 }
 
 function clearAllComments(){
@@ -448,19 +535,6 @@ function removefileLayers(){
 	for (let i = page.layerSelect.options.length - 1;
 		i >= 0; i--)
 		page.layerSelect.remove(i);
-}
-
-function saveCanvasToMemory(){
-	if (!page.canvasDiv)
-		return;
-	let currentLayer = memory.fileLayers[
-		memory.currentLayer];
-	currentLayer.divs = [];
-	for (let i = page.canvasDiv.children.length - 1;
-		i >= 0; i--)
-		currentLayer.divs.push(page.canvasDiv.children[i]);
-	
-	
 }
 
 function selectLayer(i){
@@ -534,7 +608,7 @@ function renameCurrentLayer(name){
 			page.layerSelect.selectedIndex].name = name;
 }
 
-function updateLayer(){ 
+function saveAndUpdateLayer(){ 
 	if (!page.layerSelect) return;
 	
 	saveCanvasToMemory();
@@ -626,6 +700,32 @@ function manageLoadedJson(event){
 	selectLayer(0);		
 }
 
+function getImageSize(index){
+	return new Promise((resolve, reject) => {
+		let image = newElement('img');
+		let f = new FileReader();
+		f.onerror = reject;
+		f.onload = (e) => {
+			image.onerror = reject;
+			image.onload = () => 
+				resolve({w: image.naturalWidth,
+					h: image.naturalHeight});
+			image.src = e.target.result;
+		}
+		memory.zip.file(memory.filenames.images[index])
+			.async('blob').then((blob) => {
+				f.readAsDataURL(blob);
+			});
+	});
+}
+
+function dumpFiles(){
+	for (let i = 0; i < memory.filenames.images.length; i++)
+		console.log(memory.filenames.images[i]);
+	for (let i = 0; i < memory.filenames.comments.length; i++)
+		console.log(memory.filenames.comments[i]);
+}
+
 function loadZip(){
 	
 	function clean(){ 
@@ -634,22 +734,39 @@ function loadZip(){
 		removefileLayers();
 	}
 	
+	async function finishLoading(){
+		if (memory.filenames.images.length <
+			memory.filenames.comments.length)
+			memory.filenames.comments.length =
+				memory.filenames.images.length;
+		if (memory.filenames.images.length >
+			memory.filenames.comments.length) {
+			for (let i = memory.filenames.comments.length;
+				i < memory.filenames.images.length; i++)
+				await saveDefaultJsonToZip(i);
+		}
+	}
+	
 	let f = page.fileInput.files[0];
 	if (!f) return;
-	if (regexp.imageMime.exec(f.type)){
+	//if (regexp.imageMime.exec(f.type)){
+	if (f.type.match(regexp.imageMime)){
 		//image case
 		clean();
 		
 		memory.zip = new JSZip();
-		memory.filenames = {images: [f.name],
+		imageName = DEFAULT_ROOT_NAME + '/' + f.name;
+		memory.filenames = {images: [imageName],
 			comments: []};
 		reader.singleImage.onload = (e) => {
-			memory.zip.file(f.name, e.target.result,
+			memory.zip.file(
+				imageName,
+				e.target.result,
 				{binary: true});
-			selectFile(0);
+				finishLoading()
+					.then(() => selectFile(0));
 		}
 		reader.singleImage.readAsBinaryString(f);
-		addCanvasDefaultFile();
 		return;
 	}
 		
@@ -657,8 +774,8 @@ function loadZip(){
 		// zip case
 		let tempFiles = {images: [], comments: []};
 		z.forEach(function (relativePath, zipEntry) {
-			let ext = regexp.extension
-				.exec(relativePath)[1];
+			let ext = relativePath
+				.match(regexp.extension)[1]; 
 			if( ext == 'png' || ext == 'jpg' ||
 				ext == 'jpeg' || ext == 'gif')
 				tempFiles.images.push(relativePath);
@@ -676,19 +793,8 @@ function loadZip(){
 		clean();
 		
 		memory.filenames = tempFiles;
-		if (memory.filenames.images.length !=
-			memory.filenames.comments.length){
-			console.log('Number of comment files: ' +
-				memory.filenames.comments.length);
-			memory.filenames.comments = [];
-			addCanvasDefaultFile();
-		}		
-		
-		
-		memory.zip = z; 
-		
-		selectFile(0);
-
+		memory.zip = z; 		
+		finishLoading().then(() => selectFile(0));
 	},
 	(e) => {
 		alert(getLanguagePhrase('notImageOrZipAlert'));
@@ -696,62 +802,81 @@ function loadZip(){
 	});
 }
 
-function saveJson(){
-	
-	function divsToComs(divs){
-		//unify with getCommentAndOverlay
-		let coms = [];
-		let l = divs.filter(div => 
-			div.classList.contains('commentDiv')
-		);
-		for(let i = l.length - 1; i >= 0; i--){
-			let comId = l[i].getAttribute('comId');
-			let com = {overlayDiv: null, commentDiv: null};
-			for (let j = divs.length - 1; j >= 0; j--)
-				if (divs[j].matches(
-					'[comId="' + comId + '"]')){
-					if (divs[j].classList.contains(
-						'commentDiv'))
-						com.commentDiv = divs[j];
-					if (divs[j].classList.contains(
-						'commentOverlayDiv'))
-						com.overlayDiv = divs[j];
-				}
-			if (!com.overlayDiv || !com.commentDiv)
-				continue;
-			let x = parseInt(com.overlayDiv.style.left);
-			let y = parseInt(com.overlayDiv.style.top);
-			let w = parseInt(com.overlayDiv.style.width);
-			let h = parseInt(com.overlayDiv.style.height);
-			coms.push({x1: x, y1: y, x2: x + w, y2: y + h,
-				text: com.commentDiv.textContent});
+function makeJsonObject(version, imageName, imageWidth,
+	imageHeight, layers){
+		return {version: version, 
+			image_name: imageName,
+			image_width: imageWidth,
+			image_height: imageHeight,
+			layers: layers
 		}
-		return coms;
 	}
-	
+
+async function saveDefaultJsonToZip(index){
+	//unify with saveJson
+	let size = await getImageSize(index);
+		let imageFullName = memory.filenames.images[index];
+		let path = imageFullName.match(regexp.path)[1];
+		if (path === undefined)
+			path = '';
+		let obj = makeJsonObject(1, 
+			imageFullName.replace(path, ''),
+			size.w,
+			size.h,
+			[{layer_name: DEFAULT_LAYER_NAME,
+				comments: []}]
+		);
+		
+		let ext = imageFullName.match(regexp.extension)[1];
+		if (ext === undefined)
+			ext = '';
+		let jsonFullName = 
+			imageFullName.replace(ext, 'json');
+		memory.filenames.comments[index] = jsonFullName;
+		memory.zip.file(jsonFullName, JSON.stringify(obj));
+}
+
+function saveJson(){
+
 	if (!page.canvasDiv || !page.widthInput ||
 		!page.heightInput) return;
 	
 	saveCanvasToMemory();
 	
 	let filename = '';
+	let path = '';
 	if (memory.filenames.images.length > 0){
-		filename = regexp.filename.exec(memory.filenames
-			.images[memory.currentFile])[1];
+		let imageFullName = memory.filenames.images[
+			memory.currentFile];
+		path = imageFullName.match(regexp.path)[1];
+		if (path === undefined)
+			path = '';
+		filename = imageFullName.replace(path, '');
 	}
-	let layers = []
+	let layers = [];
 	for (let i = 0; i < memory.fileLayers.length; i++){
 		let l = memory.fileLayers[i];
 		let coms = divsToComs(l.divs);
 		layers.push({layer_name: l.name, comments: coms});
 	}
-	let obj = {version: 1, image_name: filename,
-		image_width: page.widthInput.value,
-		image_height: page.heightInput.value,
-		layers: layers};
+	let obj = makeJsonObject( 1, filename,
+			page.widthInput.value,
+			page.heightInput.value,
+			layers);
 	let blob = new Blob([JSON.stringify(obj)],
 		{type: 'application/json'});
-	saveAs(blob, filename + '.json');
+	let ext = filename.match(regexp.extension)[1];
+	if (ext === undefined)
+		ext = '';
+	saveAs(blob, filename.replace(ext, 'json'));
+}
+
+function saveZip(){
+	if (!memory.zip) return;
+	memory.zip.generateAsync({type:'blob'})
+		.then((blob) => {
+			saveAs(blob, '');
+		});
 }
 
 function initCanvas() {
