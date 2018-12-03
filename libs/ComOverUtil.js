@@ -7,7 +7,7 @@ https://unlicense.org ) */
 const MAGIC_NUMBER = 64; // should be large
 const IMAGE_ID = 'img';
 const DEFAULT_LAYER_NAME = 'default';
-const DEFAULT_ROOT_NAME = 'root';
+const DEFAULT_ROOT_FOLDER_NAME = 'root';
 const regexp = {
 	extension: /(?:\.([^.]+))?$/, 
 	filename: /([^\/]+)(?:\.[^.\/]+)$/, // without ext
@@ -81,9 +81,13 @@ const templates = {
 						'onclick="triggerFileInput()">' +
 					'</button>' +
 					'<span id="fileInfo"></span>' +
+					//'<button type="button" ' +
+					//	'id="hideImageButton" ' +
+					//	'onclick="clearImage()">' +
+					//'</button>' +
 					'<button type="button" ' +
-						'id="hideImageButton" ' +
-						'onclick="clearImage()">' +
+						'id="saveArchiveButton" ' +
+						'onclick="saveArchive()">' +
 					'</button>' +
 				'</p>' +
 				'<p>' +
@@ -117,11 +121,7 @@ const templates = {
 					'</button>' +
 					'<button type="button" ' +
 						'id="saveJsonButton" ' +
-						'onclick="saveJson()">' +
-					'</button>' +
-					'<button type="button" ' +
-						'id="saveZipButton" ' +
-						'onclick="saveZip()">' +
+						'onclick="saveJsonFromCanvas()">' +
 					'</button>' +
 				'</p>' +
 				'<p>' +
@@ -162,7 +162,7 @@ const page = { imageDiv: null,
 	languageSelect: null
 };
 
-const memory = { zip: null,
+const memory = { archive: null,
 	filenames: {images: [], comments: []}, fileLayers: [],
 	currentFile: 0, currentLayer: 0, counter: 0, 
 };
@@ -172,7 +172,7 @@ let currentLanguage = '';
 const langs = [
 	{	
 		id: 'ru',
-		loadButton: 'Загрузить',
+		loadButton: 'Загрузить архив',
 		editorButton: 'Перейти в редактор',
 		viewerButton: 'Перейти в просмотрщик',
 		hideImageButton: 'Спрятать изображение',
@@ -182,7 +182,7 @@ const langs = [
 		saveJsonButton: 'Сохранить комментарии',
 		removeCommentButton: 
 			'Удалить выбранный комментарий',
-		saveZipButton:
+		saveArchiveButton:
 			'Сохранить архив',
 		commentLabel: 'Комментарий: ',
 		layerLabel: 'Слой: ',
@@ -191,11 +191,12 @@ const langs = [
 			'Удалить все комментарии?',
 		lastLayerAlert: 'Нельзя удалить последний слой',
 		noImagesAlert: 'В этом архиве нет изображений!',
-		notImageOrZipAlert: 'Не изображение и не архив!'
+		notImageOrArchiveAlert:
+			'Не изображение и не архив!'
 	},
 	{	
 		id: 'en',
-		loadButton: 'Load',
+		loadButton: 'Load archive',
 		editorButton: 'Editor',
 		viewerButton: 'Viewer',
 		hideImageButton: 'Hide image',
@@ -204,14 +205,14 @@ const langs = [
 		removeLayerButton: 'Delete layer',
 		saveJsonButton: 'Save commentaries',
 		removeCommentButton: 'Remove selected',
-		saveZipButton: 'Save Archive',
+		saveArchiveButton: 'Save Archive',
 		commentLabel: 'Commentary: ',
 		layerLabel: 'Layer: ',
 		removeLayerConfirm: 'Delete current layer?',
 		removeAllCommentsConfirm: 'Remove all comments?',
 		lastLayerAlert: 'Cannot delete last layer',
 		noImagesAlert: 'No images in this archive!',
-		notImageOrZipAlert: 'Not an image or zip!'
+		notImageOrArchiveAlert: 'Not an image or archive!'
 	}
 ];
 
@@ -262,24 +263,34 @@ function getElement(id){
 	return document.getElementById(id);
 }
 
-function getCommentAndOverlay(comId){
+function getComOverPairFromArray(arr, comId){
+	let ret = {overlayDiv: null, commentDiv: null};
+	for (let j = arr.length - 1; j >= 0; j--)
+		if (arr[j].matches(
+			'[comId="' + comId + '"]')){
+			if (arr[j].classList.contains(
+				'commentDiv'))
+				ret.commentDiv = arr[j];
+			if (arr[j].classList.contains(
+				'commentOverlayDiv'))
+				ret.overlayDiv = arr[j];
+		}
+	return ret;
+}
+
+function getComOverPairFromPage(comId){
 	if (!page.canvasDiv && !page.allCommentsDiv) return;
-	let ret = {commentDiv: null, overlayDiv: null};
 	let parentDiv = (page.canvasDiv)? page.canvasDiv :
 		page.allCommentsDiv;
-	let coms = parentDiv.querySelectorAll(
-		'[comId="' + comId + '"]');
-	if (coms.length === 0){
-		console.log('Error comId not found: ', comId); 
-		return null;
-	}
-	for (let i = coms.length - 1; i >= 0; i--){
-		if (coms[i].classList.contains('commentDiv'))
-			ret.commentDiv = coms[i];
-		if (coms[i].classList.contains(
-			'commentOverlayDiv'))
-			ret.overlayDiv = coms[i];
-	}
+	//let coms = parentDiv.querySelectorAll(
+	//	'[comId="' + comId + '"]');
+	//if (coms.length === 0){
+	//	console.log('Error comId not found: ', comId); 
+	//	return null;
+	// }
+	//let ret = {commentDiv: null, overlayDiv: null};
+	let coms = parentDiv.children;
+	let ret = getComOverPairFromArray(coms, comId);
 	return ret;
 }
 
@@ -311,7 +322,7 @@ function newComment(comId, x, y, text, el){
 
 function removeSelectedComment(){
 	if (!page.selectedComment) return;
-	let com = getCommentAndOverlay(
+	let com = getComOverPairFromPage(
 		page.selectedComment.getAttribute('comId'));
 		if (com.commentDiv)
 			page.canvasDiv.removeChild(com.commentDiv);
@@ -335,7 +346,7 @@ function selectComment(el){
 	}
 	if (el){
 		el.classList.add('selected');
-		let com = getCommentAndOverlay(
+		let com = getComOverPairFromPage(
 			el.getAttribute('comId'));
 		if (com.commentDiv)
 			page.commentInput.value = 
@@ -389,7 +400,7 @@ function selectFile(i){
 			memory.filenames.images.length + ' ';
 	}
 
-	memory.zip.file(memory.filenames.images[
+	memory.archive.file(memory.filenames.images[
 		memory.currentFile])
 		.async('blob').then((blob) => {
 			reader.image.readAsDataURL(blob);
@@ -398,7 +409,7 @@ function selectFile(i){
 		);
 	
 	if (memory.filenames.comments.length > 0){
-		memory.zip.file(memory.filenames.comments[
+		memory.archive.file(memory.filenames.comments[
 			memory.currentFile])
 			.async('blob').then((blob) => {
 					reader.json.readAsText(blob);
@@ -409,24 +420,13 @@ function selectFile(i){
 }
 
 function divsToComs(divs){
-	//unify with getCommentAndOverlay
 	let coms = [];
 	let l = divs.filter(div => 
 		div.classList.contains('commentDiv')
 	);
 	for(let i = l.length - 1; i >= 0; i--){
 		let comId = l[i].getAttribute('comId');
-		let com = {overlayDiv: null, commentDiv: null};
-		for (let j = divs.length - 1; j >= 0; j--)
-			if (divs[j].matches(
-				'[comId="' + comId + '"]')){
-				if (divs[j].classList.contains(
-					'commentDiv'))
-					com.commentDiv = divs[j];
-				if (divs[j].classList.contains(
-					'commentOverlayDiv'))
-					com.overlayDiv = divs[j];
-			}
+		let com = getComOverPairFromArray(divs, comId);
 		if (!com.overlayDiv || !com.commentDiv)
 			continue;
 		let x = parseInt(com.overlayDiv.style.left);
@@ -452,8 +452,8 @@ function saveCanvasToMemory(){
 	
 }
 
-function saveMemoryToZip(){
-
+function saveMemoryToArchive(){
+	saveCanvasToMemory();
 	return new Promise((resolve, reject) => {
 		let f = new FileReader();
 		f.onload = (e) => {
@@ -466,11 +466,11 @@ function saveMemoryToZip(){
 					comments: coms});
 			}
 			file.layers = layers;
-			memory.zip.file(memory.filenames.comments[
+			memory.archive.file(memory.filenames.comments[
 			memory.currentFile], JSON.stringify(file));
 			resolve();
 		};
-		memory.zip.file(memory.filenames.comments[
+		memory.archive.file(memory.filenames.comments[
 			memory.currentFile])
 			.async('blob').then((blob) => {
 				f.readAsText(blob);
@@ -482,8 +482,7 @@ function saveMemoryToZip(){
 }
 
 function saveAndSelectFile(index){
-	saveCanvasToMemory();
-	saveMemoryToZip().then(() => selectFile(index));
+	saveMemoryToArchive().then(() => selectFile(index));
 }
 
 function clearAllComments(){
@@ -712,7 +711,7 @@ function getImageSize(index){
 					h: image.naturalHeight});
 			image.src = e.target.result;
 		}
-		memory.zip.file(memory.filenames.images[index])
+		memory.archive.file(memory.filenames.images[index])
 			.async('blob').then((blob) => {
 				f.readAsDataURL(blob);
 			});
@@ -726,7 +725,32 @@ function dumpFiles(){
 		console.log(memory.filenames.comments[i]);
 }
 
-function loadZip(){
+async function saveDefaultJsonToArchive(index){
+	//unify with saveJsonFromCanvas
+	let size = await getImageSize(index);
+		let imageFullName = memory.filenames.images[index];
+		let path = imageFullName.match(regexp.path)[1];
+		if (path === undefined)
+			path = '';
+		let obj = newJsonComment(1, 
+			imageFullName.replace(path, ''),
+			size.w,
+			size.h,
+			[{layer_name: DEFAULT_LAYER_NAME,
+				comments: []}]
+		);
+		
+		let ext = imageFullName.match(regexp.extension)[1];
+		if (ext === undefined)
+			ext = '';
+		let jsonFullName = 
+			imageFullName.replace(ext, 'json');
+		memory.filenames.comments[index] = jsonFullName;
+		memory.archive.file(jsonFullName,
+			JSON.stringify(obj));
+}
+
+function loadArchive(){
 	
 	function clean(){ 
 		clearImage();
@@ -743,7 +767,7 @@ function loadZip(){
 			memory.filenames.comments.length) {
 			for (let i = memory.filenames.comments.length;
 				i < memory.filenames.images.length; i++)
-				await saveDefaultJsonToZip(i);
+				await saveDefaultJsonToArchive(i);
 		}
 	}
 	
@@ -754,12 +778,13 @@ function loadZip(){
 		//image case
 		clean();
 		
-		memory.zip = new JSZip();
-		imageName = DEFAULT_ROOT_NAME + '/' + f.name;
+		memory.archive = new JSZip();
+		imageName = DEFAULT_ROOT_FOLDER_NAME + '/'
+			+ f.name;
 		memory.filenames = {images: [imageName],
 			comments: []};
 		reader.singleImage.onload = (e) => {
-			memory.zip.file(
+			memory.archive.file(
 				imageName,
 				e.target.result,
 				{binary: true});
@@ -771,7 +796,7 @@ function loadZip(){
 	}
 		
 	JSZip.loadAsync(f).then((z) => {
-		// zip case
+		// archive case
 		let tempFiles = {images: [], comments: []};
 		z.forEach(function (relativePath, zipEntry) {
 			let ext = relativePath
@@ -793,16 +818,16 @@ function loadZip(){
 		clean();
 		
 		memory.filenames = tempFiles;
-		memory.zip = z; 		
+		memory.archive = z; 		
 		finishLoading().then(() => selectFile(0));
 	},
 	(e) => {
-		alert(getLanguagePhrase('notImageOrZipAlert'));
+		alert(getLanguagePhrase('notImageOrArchiveAlert'));
 		console.log(e.message);
 	});
 }
 
-function makeJsonObject(version, imageName, imageWidth,
+function newJsonComment(version, imageName, imageWidth,
 	imageHeight, layers){
 		return {version: version, 
 			image_name: imageName,
@@ -812,31 +837,7 @@ function makeJsonObject(version, imageName, imageWidth,
 		}
 	}
 
-async function saveDefaultJsonToZip(index){
-	//unify with saveJson
-	let size = await getImageSize(index);
-		let imageFullName = memory.filenames.images[index];
-		let path = imageFullName.match(regexp.path)[1];
-		if (path === undefined)
-			path = '';
-		let obj = makeJsonObject(1, 
-			imageFullName.replace(path, ''),
-			size.w,
-			size.h,
-			[{layer_name: DEFAULT_LAYER_NAME,
-				comments: []}]
-		);
-		
-		let ext = imageFullName.match(regexp.extension)[1];
-		if (ext === undefined)
-			ext = '';
-		let jsonFullName = 
-			imageFullName.replace(ext, 'json');
-		memory.filenames.comments[index] = jsonFullName;
-		memory.zip.file(jsonFullName, JSON.stringify(obj));
-}
-
-function saveJson(){
+function saveJsonFromCanvas(){
 
 	if (!page.canvasDiv || !page.widthInput ||
 		!page.heightInput) return;
@@ -859,7 +860,7 @@ function saveJson(){
 		let coms = divsToComs(l.divs);
 		layers.push({layer_name: l.name, comments: coms});
 	}
-	let obj = makeJsonObject( 1, filename,
+	let obj = newJsonComment( 1, filename,
 			page.widthInput.value,
 			page.heightInput.value,
 			layers);
@@ -871,11 +872,14 @@ function saveJson(){
 	saveAs(blob, filename.replace(ext, 'json'));
 }
 
-function saveZip(){
-	if (!memory.zip) return;
-	memory.zip.generateAsync({type:'blob'})
-		.then((blob) => {
-			saveAs(blob, '');
+function saveArchive(){
+	if (!memory.archive) return;
+	
+	saveMemoryToArchive().then(() => {
+		memory.archive.generateAsync({type:'blob'})
+			.then((blob) => {
+				saveAs(blob, '');
+			});
 		});
 }
 
@@ -950,7 +954,7 @@ function initCanvas() {
 		page.commentInput.setAttribute('disabled', true);
 		page.commentInput.oninput = () => {
 			if (!page.selectedComment) return;
-			let com = getCommentAndOverlay(
+			let com = getComOverPairFromPage(
 				page.selectedComment
 					.getAttribute('comId'));
 			if (!com.commentDiv) return;
@@ -1061,7 +1065,7 @@ function initPage(){
 	initCanvas();
 	if (page.fileInput){
 		page.fileInput
-			.addEventListener('change',	loadZip);
+			.addEventListener('change',	loadArchive);
 	}
 	if (page.languageSelect){
 		langs.forEach((lang, i, a) => {
@@ -1087,7 +1091,7 @@ function launch(mode){
 	}
 	
 	function clearMemory(){
-		memory.zip = null;
+		memory.archive = null;
 		memory.filenames.images = [];
 		memory.filenames.comments = [];
 		memory.fileLayers = [];

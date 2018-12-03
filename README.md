@@ -1,5 +1,5 @@
 # Программа для просмотра и редактирования оверлеев с комментариями для изображений
-##### Версия: бета2 (2018-11-28)
+##### Версия: бета3 (2018-12-03)
 Поддерживаемые архивы: zip.
 Поддерживаемые изображения:  png/jpeg/gif.
 ##### Инструкции: 
@@ -12,9 +12,10 @@
 ###### Режим редактора:
 Оверлеи рисуются мышью на холсте. Зажмите ЛКМ и потяните, чтобы нарисовать оверлей.
 Оверлеи выделяются по щелчку мыши. Выделенному оверлею можно редактировать комментарий. Оверлей можно удалить кнопкой на панели или клавишей del. Для отмены выделения кликните по свободному месту на холсте или нажмите esc.
-Можно выбрать архив с изображениями или одно изображение в качестве подложки. Если нет подложки, можно задавать размер холста. С подложкой размер холста фиксирован.
-Если в архиве количество комментариев равно количеству изображений, файлы с комментариями будут загружаться на холст при переключении изображений, причём всегда первоначальные. Будьте осторожны, переключая файлы в этом режиме! Сначала сохраните изменённый комментарий
-Если в архиве количество комментариев не равно количеству изображений, или если открыто одно изображение, будет создан файл с комментариями "по умолчанию", он не будет изменяться при переключении изображений в таком архиве.
+Редактор запускается в свободном режиме с возможностью задавать размер холста. В этом режиме нельзя сохранить архив, только один файл с комментариями.
+Можно добавлять и удалять слои соответствующими кнопками на панели. Выделенному слою можно менять имя. Последний слой нельзя удалить.
+Можно выбрать архив с изображениями или одно изображение, которое считается за архив с одним изображением. После выбора архива размер холста фиксирован.
+Из архива будут загружены все комментарии, которые будут найдены. Если изображений больше - для них будут созданы комментарии с одним слоем "по умолчанию". Архив можно сохранять в любой момент, или сохранять один, текущий файл с комментариями. **Внимание**, не перезаписывайте свой архив на жестком диске, лучше сохраните архив с правками как новый.
 Горячие клавиши:
 * Стрелки влево-вправо - прокрутка подложек
 * Esc - снять выделение
@@ -27,17 +28,13 @@
 * Общие:
   * Поддержка других форматов архивов и изображений
   * Внедрить проверку на соответствие json файлов схеме
-  * Не сбрасывать выбранный архив при смене режимов, после реализации хранения измененных файлов в редакторе
+  * Не сбрасывать выбранный архив при смене режимов
 * Просмотрщик:
   * Добавить опцию "автоподгон масштаба" - если размер изображения отличается от ожидаемого, оверлеи комментариев масштабируются, чтобы соответствовать размеру изображения
-  * Добавить кнопку "сохранить архив" и предупреждать о несохранённых изменениях, после реализации хранения измененных файлов в редакторе и при несбрасывании архива при переходе между режимами
+  * Добавить кнопку "сохранить архив" и предупреждать о несохранённых изменениях, при несбрасывании архива при переходе между режимами
 * Редактор:
-  * Другое поведение холста при переключении подложек
-    * Автоматически сохранять файл с комментариями, очищать холст
-	* Хранить комментарии для каждого файла в памяти, сохранять изображения и комментарии сразу одним архивом
   * Указание имени и размера файла вручную, указание авторства
   * Предупреждения о несохранённых изменениях
-  * Загружать оверлеи из файлов для продолжения редактирования
   * Перемещение и изменение размера оверлеев
   * Не сохранять комментарии, оверлеи которых выходят за пределы холста
   * undo, redo
@@ -45,4 +42,43 @@
 
 # Program for viewing and editing overlays with comments for images
 
-Translation in progress...
+##### version: beta3 (2018-12-03)
+Supported archives: zip.
+Supported images:  png/jpeg/gif.
+##### Instructions: 
+Open HTML with program, change language in upper right corner. Program has two modes: viewer and editor.
+###### Viewer mode: 
+Choose archive with equal number of images and json comment files (all must validate json schema). Images and comments will be uploaded and sorted lexicographically (10.jpg will be before 8.jpg, but after 08.jpg) and paired correspondingly.
+Comment appears on hover over the overlay. All overlays are hidden on click anywhere.
+Hotkeys:
+* left-right arrows - scroll images
+###### Editor mode:
+Overlays are drawn on canvas with mouse. Click and hold LMB to draw an overlay.
+Overlays are selected on click. Selected overlay's comment can be edited. It can be deleted with button on control panel, or with del key. To unselect click on free canvas space or type esc.
+Editor is started in free mode with possibility to set canvas size. In this mode archive can be saved, only comment file.
+Layers can be added and removed by corresponding buttons on panel, current layer's name can be edited. Last layer can't be deleted.
+Archive can be selected, as well as a single image, which count as an archive with sole image. After archive upload canvas size is locked.
+All the comment files found will be uploaded from the archive. If there are more images, than comments - there will be created 'default' comment files with a single layer. Archive can be saved anytime, as well as current comment file. **Attention**, don't overwrite an existing archive on hard drive, better save edited archive as new one.
+Hotkeys:
+* left-right arrows - scroll images
+* Esc - deselect comment
+* Del - remove selected comment 
+  
+
+###### Waiting for fix: 
+
+###### Possible ameliorations:
+* General:
+  * Support of another archive and image formats
+  * Implement validation of json comment files against schema
+  * Don't discard opened archive with mode change
+* Viewer:
+  * Add "auto-scale" option - if image size differs from expected one, comment overlays will be scaled to correspond to image size
+  * Add "save archive" button and warn about unsaved changes, when archive won't be discarded with mode change 
+* Editor:
+  * Manual set of filename and size, author attribution
+  * Warn over unsaved changes
+  * Move overlays and change their size
+  * Don't save comments if overlays surpass canvas size
+  * implement undo, redo
+
