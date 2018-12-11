@@ -287,16 +287,16 @@ function newElement(tag){
 	return document.createElement(tag);
 }
 
-function newLayer(n, d){
-	return {name: n, comments: d};
+function newLayer(name, list){
+	return {name: name, comments: list};
 }
 
-function newMemoryComment(c, co){
-	return {commentDiv: c, commentOverlayDiv: co};
+function newMemoryComment(comment, commentOverlay){
+	return {commentDiv: comment, 
+		commentOverlayDiv: commentOverlay};
 }
 
-
-function newComment(x, y, text, el){
+function newComment(x, y, text, commentOverlay){
 	let com = newElement('div');
 	com.style.zIndex = MAGIC_NUMBER;
 	com.classList.add('commentDiv');
@@ -304,10 +304,10 @@ function newComment(x, y, text, el){
 	com.style.top = y + 'px';
 	com.appendChild(document.createTextNode(text));
 	com.style.visibility = 'hidden';
-	el.addEventListener('mouseover', () => {
+	commentOverlay.addEventListener('mouseover', () => {
 		com.style.visibility = 'visible';
 	});
-	el.addEventListener('mouseout', () => {
+	commentOverlay.addEventListener('mouseout', () => {
 		com.style.visibility = 'hidden';
 	});
 	return com;
@@ -330,16 +330,21 @@ function removeComment(comOver){
 		}
 }
 
+function disableIfPresent(element, flag){
+	if (!element) return;
+	if (flag)
+		element.setAttribute('disabled', true);
+	else
+		element.removeAttribute('disabled');
+}
+
 function deselectComment(){
 	if (page.selectedComment){
 		page.selectedComment.classList.remove('selected');
 	}
 	page.selectedComment = null;
-	if (page.commentInput)
-		page.commentInput.setAttribute('disabled', true);
-	if (page.removeCommentButton)
-		page.removeCommentButton
-			.setAttribute('disabled', true);
+	disableIfPresent(page.commentInput, true);
+	disableIfPresent(page.removeCommentButton, true);
 }
 
 function removeSelectedComment(){
@@ -355,11 +360,9 @@ function selectComment(el){
 		if (com.commentDiv)
 			page.commentInput.value = 
 				com.commentDiv.textContent;
-		if (page.removeCommentButton)
-			page.removeCommentButton
-				.removeAttribute('disabled');
+		disableIfPresent(page.removeCommentButton, false);
+		disableIfPresent(page.commentInput, false);
 		if (page.commentInput){
-			page.commentInput.removeAttribute('disabled');
 			page.commentInput.focus();
 		}
 		page.selectedComment = el;
@@ -504,8 +507,8 @@ function clearCanvas(){
 function clearImage(){
 	
 	function unlock_size(){
-		page.widthInput.removeAttribute('disabled');
-		page.heightInput.removeAttribute('disabled');
+		disableIfPresent(page.widthInput, false);
+		disableIfPresent(page.heightInput, false);
 		page.imageDiv.style.width =
 			page.widthInput.value + 'px';
 		page.imageDiv.style.height =
@@ -528,13 +531,8 @@ function clearArchive(){
 	memory.filenames = {images: [], comments: []}; 
 	if(page.fileInfo)
 		page.fileInfo.textContent = '';
-	if (page.saveArchiveButton){
-		page.saveArchiveButton
-			.setAttribute('disabled', true);
-	}
-	if (page.clearArchiveButton)
-		page.clearArchiveButton
-			.setAttribute('disabled', true);
+	disableIfPresent(page.saveArchiveButton, true);
+	disableIfPresent(page.clearArchiveButton, true);
 }
 	
 function removeFileLayers(){
@@ -650,8 +648,8 @@ function manageLoadedImage(event){
 		page.canvasDiv.style.height = h + 'px';
 		page.imageDiv.style.width = null;
 		page.imageDiv.style.height = null;
-		page.widthInput.setAttribute('disabled', true);
-		page.heightInput.setAttribute('disabled', true);
+		disableIfPresent(page.widthInput, true);
+		disableIfPresent(page.heightInput, true);
 	}
 
 	clearImage();
@@ -762,12 +760,8 @@ function loadArchive(){
 				i < memory.filenames.images.length; i++)
 				await addDefaultJsonToArchive(i);
 		}
-		if (page.saveArchiveButton)
-			page.saveArchiveButton.
-				removeAttribute('disabled');
-		if (page.clearArchiveButton)
-			page.clearArchiveButton.
-				removeAttribute('disabled');
+		disableIfPresent(page.saveArchiveButton, false);
+		disableIfPresent(page.clearArchiveButton, false);
 	}
 	
 	let f = page.fileInput.files[0];
@@ -960,7 +954,7 @@ function initCanvas() {
 					break;
 				}
 			};
-		page.commentInput.setAttribute('disabled', true);
+		disableIfPresent(page.commentInput, true);
 		page.commentInput.oninput = () => {
 			if (!page.selectedComment) return;
 			let com = getComOverPair(page.selectedComment);
@@ -969,18 +963,9 @@ function initCanvas() {
 				commentInput.value;
 		};
 	}
-	if (page.removeCommentButton){
-		page.removeCommentButton
-			.setAttribute('disabled', true);
-	}
-	if (page.saveArchiveButton){
-		page.saveArchiveButton
-			.setAttribute('disabled', true);
-	}
-	if (page.clearArchiveButton){
-		page.clearArchiveButton
-			.setAttribute('disabled', true);
-	}
+	disableIfPresent(page.removeCommentButton, true);
+	disableIfPresent(page.saveArchiveButton, true);
+	disableIfPresent(page.clearArchiveButton, true);
 	if (page.widthInput){
 		page.canvasDiv.style.width = 
 			page.widthInput.value + 'px';
