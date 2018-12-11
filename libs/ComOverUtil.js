@@ -8,6 +8,7 @@ const MAGIC_NUMBER = 64; // should be large
 const IMAGE_ID = 'img';
 const DEFAULT_LAYER_NAME = 'default';
 const DEFAULT_ROOT_FOLDER_NAME = 'root';
+const DEFAULT_IMAGE_NAME = 'default';
 const regexp = {
 	extension: /(?:\.([^.]+))?$/, 
 	filename: /([^\/]+)(?:\.[^.\/]+)$/, // without ext
@@ -39,7 +40,7 @@ const templates = {
 				'<p>' +
 					'<span id="fileInfo"></span>' +
 					'<select id="layerSelect" ' +
-					'onchange="saveAndUpdateLayer()">' +
+					'onchange="updateLayer()">' +
 					'</select>' +
 				'</p>' +
 			'</div>' +
@@ -80,15 +81,18 @@ const templates = {
 						'id="loadButton" ' +
 						'onclick="triggerFileInput()">' +
 					'</button>' +
-					'<span id="fileInfo"></span>' +
-					//'<button type="button" ' +
-					//	'id="hideImageButton" ' +
-					//	'onclick="clearImage()">' +
-					//'</button>' +
+					'<button type="button" ' +
+						'id="clearArchiveButton" ' +
+						'onclick="clearArchive()">' +
+					'</button>' +
+					'</button>' +
 					'<button type="button" ' +
 						'id="saveArchiveButton" ' +
 						'onclick="saveArchive()">' +
 					'</button>' +
+				'</p>' +
+				'<p>' +
+					'<span id="fileInfo"></span>' +
 				'</p>' +
 				'<p>' +
 					'<label for="layerInput" ' +
@@ -97,7 +101,7 @@ const templates = {
 					'<input type="text" ' +
 					'id="layerInput">' +
 					'<select id="layerSelect" ' +
-					'onchange="saveAndUpdateLayer()">' +
+					'onchange="updateLayer()">' +
 					'</select>' +
 					'<button type="button" ' +
 						'id="addLayerButton" ' +
@@ -110,9 +114,11 @@ const templates = {
 				'</p>' +
 				'<p>' +
 					'<input type="number" ' +
+						'class="numInput" ' +
 						'id="widthInput" ' +
 						'min="1" value="512">' +
 					'<input type="number" ' +
+						'class="numInput" ' +
 						'id="heightInput" ' +
 						'min="1" value="512">' +
 					'<button type="button" ' +
@@ -121,7 +127,7 @@ const templates = {
 					'</button>' +
 					'<button type="button" ' +
 						'id="saveJsonButton" ' +
-						'onclick="saveJsonFromCanvas()">' +
+						'onclick="saveCurrentJson()">' +
 					'</button>' +
 				'</p>' +
 				'<p>' +
@@ -159,12 +165,13 @@ const page = { imageDiv: null,
 	coordinatesInfo: null, widthInput: null,
 	heightInput: null, commentInput: null,
 	selectedComment: null, removeCommentButton: null,
+	saveArchiveButton: null, clearArchiveButton: null,
 	languageSelect: null
 };
 
 const memory = { archive: null,
 	filenames: {images: [], comments: []}, fileLayers: [],
-	currentFile: 0, currentLayer: 0, counter: 0, 
+	currentFile: 0, currentLayer: 0, 
 };
 
 let currentLanguage = '';
@@ -175,7 +182,7 @@ const langs = [
 		loadButton: 'Загрузить архив',
 		editorButton: 'Перейти в редактор',
 		viewerButton: 'Перейти в просмотрщик',
-		hideImageButton: 'Спрятать изображение',
+		clearArchiveButton: 'Чистый холст',
 		removeAllCommentsButton: 'Удалить все комментарии',
 		addLayerButton: 'Новый слой',
 		removeLayerButton: 'Удалить слой',
@@ -189,6 +196,8 @@ const langs = [
 		removeLayerConfirm: 'Удалить текущий слой?',
 		removeAllCommentsConfirm: 
 			'Удалить все комментарии?',
+		removeArchiveConfirm: 
+			'Архив будет потерян, продолжить?',
 		lastLayerAlert: 'Нельзя удалить последний слой',
 		noImagesAlert: 'В этом архиве нет изображений!',
 		notImageOrArchiveAlert:
@@ -199,7 +208,7 @@ const langs = [
 		loadButton: 'Load archive',
 		editorButton: 'Editor',
 		viewerButton: 'Viewer',
-		hideImageButton: 'Hide image',
+		clearArchiveButton: 'Pure canvas',
 		removeAllCommentsButton: 'Remove all commentaries',
 		addLayerButton: 'New layer',
 		removeLayerButton: 'Delete layer',
@@ -210,6 +219,8 @@ const langs = [
 		layerLabel: 'Layer: ',
 		removeLayerConfirm: 'Delete current layer?',
 		removeAllCommentsConfirm: 'Remove all comments?',
+		removeArchiveConfirm: 
+			'Archive will be lost, continue?',
 		lastLayerAlert: 'Cannot delete last layer',
 		noImagesAlert: 'No images in this archive!',
 		notImageOrArchiveAlert: 'Not an image or archive!'
@@ -263,35 +274,13 @@ function getElement(id){
 	return document.getElementById(id);
 }
 
-function getComOverPairFromArray(arr, comId){
-	let ret = {overlayDiv: null, commentDiv: null};
-	for (let j = arr.length - 1; j >= 0; j--)
-		if (arr[j].matches(
-			'[comId="' + comId + '"]')){
-			if (arr[j].classList.contains(
-				'commentDiv'))
-				ret.commentDiv = arr[j];
-			if (arr[j].classList.contains(
-				'commentOverlayDiv'))
-				ret.overlayDiv = arr[j];
-		}
-	return ret;
-}
-
-function getComOverPairFromPage(comId){
-	if (!page.canvasDiv && !page.allCommentsDiv) return;
-	let parentDiv = (page.canvasDiv)? page.canvasDiv :
-		page.allCommentsDiv;
-	//let coms = parentDiv.querySelectorAll(
-	//	'[comId="' + comId + '"]');
-	//if (coms.length === 0){
-	//	console.log('Error comId not found: ', comId); 
-	//	return null;
-	// }
-	//let ret = {commentDiv: null, overlayDiv: null};
-	let coms = parentDiv.children;
-	let ret = getComOverPairFromArray(coms, comId);
-	return ret;
+function getComOverPair(comOver){
+	let comments = memory.fileLayers[memory.currentLayer]
+		.comments;
+	for(let i = comments.length - 1; i >= 0; i--)
+		if (comments[i].commentOverlayDiv === comOver)
+			return comments[i];
+	return null;
 }
 
 function newElement(tag){
@@ -299,14 +288,18 @@ function newElement(tag){
 }
 
 function newLayer(n, d){
-	return {name: n, divs: d};
+	return {name: n, comments: d};
 }
 
-function newComment(comId, x, y, text, el){
+function newMemoryComment(c, co){
+	return {commentDiv: c, commentOverlayDiv: co};
+}
+
+
+function newComment(x, y, text, el){
 	let com = newElement('div');
 	com.style.zIndex = MAGIC_NUMBER;
 	com.classList.add('commentDiv');
-	com.setAttribute('comId', comId);
 	com.style.left = x + 'px';
 	com.style.top = y + 'px';
 	com.appendChild(document.createTextNode(text));
@@ -320,18 +313,27 @@ function newComment(comId, x, y, text, el){
 	return com;
 }
 
-function removeSelectedComment(){
-	if (!page.selectedComment) return;
-	let com = getComOverPairFromPage(
-		page.selectedComment.getAttribute('comId'));
-		if (com.commentDiv)
-			page.canvasDiv.removeChild(com.commentDiv);
-		if (com.overlayDiv)
-			page.canvasDiv.removeChild(com.overlayDiv);
-	deselectComment();
+function removeComment(comOver){
+	if (!comOver) return;
+	let comments = memory
+		.fileLayers[memory.currentLayer].comments;
+	for(let i = comments.length - 1; i >= 0; i--)
+		if (comments[i].commentOverlayDiv === comOver){
+			if (comments[i].commentDiv)
+				page.canvasDiv
+					.removeChild(comments[i].commentDiv);
+			page.canvasDiv
+				.removeChild(comOver);
+			// don't use getComOverPair
+			comments.splice(i, 1); 
+			break;
+		}
 }
 
 function deselectComment(){
+	if (page.selectedComment){
+		page.selectedComment.classList.remove('selected');
+	}
 	page.selectedComment = null;
 	if (page.commentInput)
 		page.commentInput.setAttribute('disabled', true);
@@ -340,14 +342,16 @@ function deselectComment(){
 			.setAttribute('disabled', true);
 }
 
+function removeSelectedComment(){
+	removeComment(page.selectedComment);
+	deselectComment();
+}
+
 function selectComment(el){
-	if (page.selectedComment){
-		page.selectedComment.classList.remove('selected');
-	}
+	deselectComment();
 	if (el){
 		el.classList.add('selected');
-		let com = getComOverPairFromPage(
-			el.getAttribute('comId'));
+		let com = getComOverPair(el);
 		if (com.commentDiv)
 			page.commentInput.value = 
 				com.commentDiv.textContent;
@@ -360,9 +364,6 @@ function selectComment(el){
 		}
 		page.selectedComment = el;
 	}
-	else {
-		deselectComment();
-	}
 }
 
 function triggerFileInput(){
@@ -373,15 +374,17 @@ function triggerFileInput(){
 function goLeft(){
 	if (memory.filenames.images.length == 0) return;
 	(memory.currentFile - 1 < 0) ?
-		saveAndSelectFile(memory.filenames.images.length - 1) :
+		saveAndSelectFile(memory.filenames
+		.images.length - 1) :
 		saveAndSelectFile(memory.currentFile - 1);
 }
 
 function goRight(){
 	if (memory.filenames.images.length == 0) return;
 	(memory.currentFile + 1 >=
-		memory.filenames.images.length) ? saveAndSelectFile(0) :
-		saveAndSelectFile(memory.currentFile + 1);
+		memory.filenames.images.length) ?
+			saveAndSelectFile(0) :
+			saveAndSelectFile(memory.currentFile + 1);
 }
 
 function selectFile(i){ 
@@ -419,55 +422,43 @@ function selectFile(i){
 	}
 }
 
-function divsToComs(divs){
-	let coms = [];
-	let l = divs.filter(div => 
-		div.classList.contains('commentDiv')
-	);
-	for(let i = l.length - 1; i >= 0; i--){
-		let comId = l[i].getAttribute('comId');
-		let com = getComOverPairFromArray(divs, comId);
-		if (!com.overlayDiv || !com.commentDiv)
-			continue;
-		let x = parseInt(com.overlayDiv.style.left);
-		let y = parseInt(com.overlayDiv.style.top);
-		let w = parseInt(com.overlayDiv.style.width);
-		let h = parseInt(com.overlayDiv.style.height);
-		coms.push({x1: x, y1: y, x2: x + w, y2: y + h,
-			text: com.commentDiv.textContent});
+function layersToJson(){
+	
+	function commentsToJson(comments){
+		let coms = [];
+		for(let i = comments.length - 1; i >= 0; i--){
+			let com = comments[i];
+			if (!com.commentOverlayDiv || !com.commentDiv)
+				continue;
+			let ov = com.commentOverlayDiv;
+			let x = parseInt(ov.style.left);
+			let y = parseInt(ov.style.top);
+			let w = parseInt(ov.style.width);
+			let h = parseInt(ov.style.height);
+			coms.push({x1: x, y1: y, x2: x + w, y2: y + h,
+				text: com.commentDiv.textContent});
+		}
+		return coms;
 	}
-	return coms;
+	
+	let layers = [];
+	for (let i = 0; i < memory.fileLayers.length; i++){
+		let l = memory.fileLayers[i];
+		let coms = commentsToJson(l.comments);
+		layers.push({layer_name: l.name,
+			comments: coms});
+	}
+	return layers;
 }
 
-function saveCanvasToMemory(){
-	if (!page.canvasDiv)
-		return;
-	let currentLayer = memory.fileLayers[
-		memory.currentLayer];
-	currentLayer.divs = [];
-	for (let i = page.canvasDiv.children.length - 1;
-		i >= 0; i--)
-		currentLayer.divs.push(page.canvasDiv.children[i]);
-	
-	
-}
-
-function saveMemoryToArchive(){
-	saveCanvasToMemory();
+function saveCurrentFileToArchive(){
 	return new Promise((resolve, reject) => {
 		let f = new FileReader();
 		f.onload = (e) => {
 			file = JSON.parse(event.target.result);
-			let layers = [];
-			for (let i = 0; i < memory.fileLayers.length; i++){
-				let l = memory.fileLayers[i];
-				let coms = divsToComs(l.divs);
-				layers.push({layer_name: l.name,
-					comments: coms});
-			}
-			file.layers = layers;
+			file.layers = layersToJson();
 			memory.archive.file(memory.filenames.comments[
-			memory.currentFile], JSON.stringify(file));
+				memory.currentFile], JSON.stringify(file));
 			resolve();
 		};
 		memory.archive.file(memory.filenames.comments[
@@ -482,7 +473,8 @@ function saveMemoryToArchive(){
 }
 
 function saveAndSelectFile(index){
-	saveMemoryToArchive().then(() => selectFile(index));
+	saveCurrentFileToArchive().then(() =>
+		selectFile(index));
 }
 
 function clearAllComments(){
@@ -527,8 +519,25 @@ function clearImage(){
 		unlock_size();
 	}
 }
+
+function clearArchive(){
+	if (!confirm(getLanguagePhrase(
+		'removeArchiveConfirm'))) return;
+	clearImage();
+	memory.archive = null;
+	memory.filenames = {images: [], comments: []}; 
+	if(page.fileInfo)
+		page.fileInfo.textContent = '';
+	if (page.saveArchiveButton){
+		page.saveArchiveButton
+			.setAttribute('disabled', true);
+	}
+	if (page.clearArchiveButton)
+		page.clearArchiveButton
+			.setAttribute('disabled', true);
+}
 	
-function removefileLayers(){
+function removeFileLayers(){
 	memory.fileLayers = [];
 	if (!page.layerSelect) return;
 	for (let i = page.layerSelect.options.length - 1;
@@ -544,19 +553,24 @@ function selectLayer(i){
 		return;
 	}
 	memory.currentLayer = i;
-	clearAllComments()
-	if (page.allCommentsDiv){
-		memory.fileLayers[i].divs
-			.forEach((div, n, a) => {
-				page.allCommentsDiv.appendChild(div);
-		});
-	}
-	if (page.canvasDiv){
-		memory.fileLayers[i].divs
-			.forEach((div, n, a) => {
-				page.canvasDiv.appendChild(div);
-		});
-	}
+	deselectComment();
+	clearAllComments();
+	
+	memory.fileLayers[i].comments.forEach((com, n, a) => {
+			if (page.allCommentsDiv){
+				page.allCommentsDiv
+					.appendChild(com.commentDiv);
+				page.allCommentsDiv
+					.appendChild(com.commentOverlayDiv);
+			}
+			if (page.canvasDiv){
+				page.canvasDiv
+					.appendChild(com.commentDiv);
+				page.canvasDiv
+					.appendChild(com.commentOverlayDiv);
+			}
+	});
+
 	if (page.layerInput){
 		page.layerInput.value =	memory.fileLayers[i].name;
 	}
@@ -568,8 +582,8 @@ function updateLanguage(){
 	setPageLanguage();
 }
 
-function addLayer(name, divs){
-	let l = newLayer(name, divs);
+function addLayer(name, comments){
+	let l = newLayer(name, comments);
 	if (page.layerSelect){
 		let option = newElement('option');
 		option.text = name;
@@ -607,20 +621,10 @@ function renameCurrentLayer(name){
 			page.layerSelect.selectedIndex].name = name;
 }
 
-function saveAndUpdateLayer(){ 
+function updateLayer(){ 
 	if (!page.layerSelect) return;
 	
-	saveCanvasToMemory();
-	
-	for( let i = memory.fileLayers.length - 1;
-		i >= 0; i--){
-			if (memory.fileLayers[i].name ==
-				page.layerSelect.value){
-					selectLayer(i, true);
-					return;
-			}
-	}
-	console.log('Unknown layer: ', page.layerSelect.value);
+	selectLayer(page.layerSelect.selectedIndex);
 }
 
 function addCanvasDefaultFile(){
@@ -666,10 +670,9 @@ function manageLoadedImage(event){
 
 function manageLoadedJson(event){
 	
-	function addComment(jsonComment, list, comId){
+	function addComment(jsonComment, list){
 		let commentOverlay = newElement('div');
 		commentOverlay.classList.add('commentOverlayDiv');
-		commentOverlay.setAttribute('comId', comId);
 		commentOverlay.style.left = jsonComment.x1 + 'px';
 		commentOverlay.style.top = jsonComment.y1 + 'px';
 		commentOverlay.style.width = (jsonComment.x2 -
@@ -681,73 +684,63 @@ function manageLoadedJson(event){
 				.add('canvasOverlayDiv');
 			addSelectCommentListener(commentOverlay);
 		}
-		let comment = newComment(comId, jsonComment.x1,
+		let comment = newComment(jsonComment.x1,
 			jsonComment.y2 + 5, jsonComment.text,
 			commentOverlay);
-		list.push(commentOverlay, comment);
+		let container = newMemoryComment(comment,
+			commentOverlay);
+		list.push(container);
 	}
 	
-	removefileLayers();
+	removeFileLayers();
+	
 	let json = JSON.parse(event.target.result);
 	json.layers.forEach((jsonLayer, i, a) => {
-		let divs = [];
+		let comments = [];
 		jsonLayer.comments.forEach((json, j, ar) => {
-			addComment(json, divs, j);
+			addComment(json, comments);
 		});
-		addLayer(jsonLayer.layer_name, divs);
+		addLayer(jsonLayer.layer_name, comments);
 	});
 	selectLayer(0);		
 }
 
-function getImageSize(index){
-	return new Promise((resolve, reject) => {
-		let image = newElement('img');
-		let f = new FileReader();
-		f.onerror = reject;
-		f.onload = (e) => {
-			image.onerror = reject;
-			image.onload = () => 
-				resolve({w: image.naturalWidth,
-					h: image.naturalHeight});
-			image.src = e.target.result;
-		}
-		memory.archive.file(memory.filenames.images[index])
-			.async('blob').then((blob) => {
-				f.readAsDataURL(blob);
-			});
+function newJsonCommentAsString(version, imageName,
+	imageWidth, imageHeight, layers){
+	return JSON.stringify({version: version, 
+		image_name: imageName,
+		image_width: imageWidth,
+		image_height: imageHeight,
+		layers: layers
 	});
 }
 
-function dumpFiles(){
-	for (let i = 0; i < memory.filenames.images.length; i++)
-		console.log(memory.filenames.images[i]);
-	for (let i = 0; i < memory.filenames.comments.length; i++)
-		console.log(memory.filenames.comments[i]);
+function getImageNameNoPath(index){
+	let imageFullName = memory.filenames.images[index];
+	let path = imageFullName.match(regexp.path)[1];
+	return (path === undefined) ?
+		imageFullName : imageFullName.replace(path, '');
 }
 
-async function saveDefaultJsonToArchive(index){
-	//unify with saveJsonFromCanvas
-	let size = await getImageSize(index);
+async function addDefaultJsonToArchive(index){
+	
+	function getJsonNameWithPath(index){
 		let imageFullName = memory.filenames.images[index];
-		let path = imageFullName.match(regexp.path)[1];
-		if (path === undefined)
-			path = '';
-		let obj = newJsonComment(1, 
-			imageFullName.replace(path, ''),
-			size.w,
-			size.h,
-			[{layer_name: DEFAULT_LAYER_NAME,
-				comments: []}]
-		);
-		
 		let ext = imageFullName.match(regexp.extension)[1];
-		if (ext === undefined)
-			ext = '';
-		let jsonFullName = 
+		return (ext === undefined) ? imageFullName :
 			imageFullName.replace(ext, 'json');
-		memory.filenames.comments[index] = jsonFullName;
-		memory.archive.file(jsonFullName,
-			JSON.stringify(obj));
+	}
+	
+	let size = await getImageSize(index);
+	let imageName = getImageNameNoPath(index);
+	let defaultLayer = {layer_name: DEFAULT_LAYER_NAME,
+		comments: []};
+	let body = newJsonCommentAsString(1, imageName,
+		size.w, size.h, [defaultLayer]);
+	
+	let jsonFullName = getJsonNameWithPath(index);
+	memory.filenames.comments[index] = jsonFullName;
+	memory.archive.file(jsonFullName, body);
 }
 
 function loadArchive(){
@@ -755,7 +748,7 @@ function loadArchive(){
 	function clean(){ 
 		clearImage();
 		clearAllComments();
-		removefileLayers();
+		removeFileLayers();
 	}
 	
 	async function finishLoading(){
@@ -767,13 +760,18 @@ function loadArchive(){
 			memory.filenames.comments.length) {
 			for (let i = memory.filenames.comments.length;
 				i < memory.filenames.images.length; i++)
-				await saveDefaultJsonToArchive(i);
+				await addDefaultJsonToArchive(i);
 		}
+		if (page.saveArchiveButton)
+			page.saveArchiveButton.
+				removeAttribute('disabled');
+		if (page.clearArchiveButton)
+			page.clearArchiveButton.
+				removeAttribute('disabled');
 	}
 	
 	let f = page.fileInput.files[0];
 	if (!f) return;
-	//if (regexp.imageMime.exec(f.type)){
 	if (f.type.match(regexp.imageMime)){
 		//image case
 		clean();
@@ -827,55 +825,56 @@ function loadArchive(){
 	});
 }
 
-function newJsonComment(version, imageName, imageWidth,
-	imageHeight, layers){
-		return {version: version, 
-			image_name: imageName,
-			image_width: imageWidth,
-			image_height: imageHeight,
-			layers: layers
+function getImageSize(index){
+	return new Promise((resolve, reject) => {
+		let image = newElement('img');
+		let f = new FileReader();
+		f.onerror = reject;
+		f.onload = (e) => {
+			image.onerror = reject;
+			image.onload = () => 
+				resolve({w: image.naturalWidth,
+					h: image.naturalHeight});
+			image.src = e.target.result;
 		}
-	}
+		memory.archive.file(memory.filenames.images[index])
+			.async('blob').then((blob) => {
+				f.readAsDataURL(blob);
+			});
+	});
+}
 
-function saveJsonFromCanvas(){
+function dumpFiles(){
+	for (let i = 0; i < memory.filenames.images.length; i++)
+		console.log(memory.filenames.images[i]);
+	for (let i = 0; i < memory.filenames.comments.length;
+		i++)
+		console.log(memory.filenames.comments[i]);
+}
 
-	if (!page.canvasDiv || !page.widthInput ||
-		!page.heightInput) return;
+function saveCurrentJson(){
+	//untie from inputs?
+	if (!page.widthInput ||	!page.heightInput) return;
 	
-	saveCanvasToMemory();
-	
-	let filename = '';
-	let path = '';
-	if (memory.filenames.images.length > 0){
-		let imageFullName = memory.filenames.images[
-			memory.currentFile];
-		path = imageFullName.match(regexp.path)[1];
-		if (path === undefined)
-			path = '';
-		filename = imageFullName.replace(path, '');
-	}
-	let layers = [];
-	for (let i = 0; i < memory.fileLayers.length; i++){
-		let l = memory.fileLayers[i];
-		let coms = divsToComs(l.divs);
-		layers.push({layer_name: l.name, comments: coms});
-	}
-	let obj = newJsonComment( 1, filename,
-			page.widthInput.value,
-			page.heightInput.value,
-			layers);
-	let blob = new Blob([JSON.stringify(obj)],
+	let imageName = DEFAULT_IMAGE_NAME;
+	if (memory.filenames.images.length > 0)
+		imageName = getImageNameNoPath(memory.currentFile);
+	let layers = layersToJson();
+	let body = newJsonCommentAsString(1, imageName,
+		page.widthInput.value, page.heightInput.value,
+		layers);
+	let blob = new Blob([body],	
 		{type: 'application/json'});
-	let ext = filename.match(regexp.extension)[1];
-	if (ext === undefined)
-		ext = '';
-	saveAs(blob, filename.replace(ext, 'json'));
+	let ext = imageName.match(regexp.extension)[1];
+	let jsonName = (ext === undefined) ? imageName :
+		imageName.replace(ext, 'json')
+	saveAs(blob, jsonName);
 }
 
 function saveArchive(){
 	if (!memory.archive) return;
 	
-	saveMemoryToArchive().then(() => {
+	saveCurrentFileToArchive().then(() => {
 		memory.archive.generateAsync({type:'blob'})
 			.then((blob) => {
 				saveAs(blob, '');
@@ -898,7 +897,7 @@ function initCanvas() {
 		}
 	}
 	
-	function setMousePosition(e) { // Stack Overflow
+	function setMousePosition(e) { // Stack Overflow code
 		let ev = e || window.event; //Moz || IE
 		if (ev.pageX) { //Moz
 			mouse.x = ev.pageX - mouse.offsetX;
@@ -928,14 +927,15 @@ function initCanvas() {
 			page.canvasDiv.removeChild(el);
 			return;
 		}
-		el.setAttribute('comId', memory.counter);
-		let com = newComment(memory.counter, 
+		let com = newComment(
 			parseInt(el.style.left),
 			parseInt(el.style.top) + 
 			parseInt(el.style.height) + 5, '', el);
-		memory.counter++;
 		page.canvasDiv.appendChild(com);
 		addSelectCommentListener(el);
+		let container = newMemoryComment(com, el);
+		memory.fileLayers[memory.currentLayer]
+			.comments.push(container);
 	}
 	
 	if(!page.canvasDiv) 
@@ -951,12 +951,19 @@ function initCanvas() {
 			style.borderWidth;
 	}
 	if (page.commentInput){
+		page.commentInput.onkeydown = 
+			(e) => { 
+				switch(e.keyCode){
+					case 37: 
+					case 39:
+					e.stopPropagation();
+					break;
+				}
+			};
 		page.commentInput.setAttribute('disabled', true);
 		page.commentInput.oninput = () => {
 			if (!page.selectedComment) return;
-			let com = getComOverPairFromPage(
-				page.selectedComment
-					.getAttribute('comId'));
+			let com = getComOverPair(page.selectedComment);
 			if (!com.commentDiv) return;
 			com.commentDiv.textContent =
 				commentInput.value;
@@ -964,6 +971,14 @@ function initCanvas() {
 	}
 	if (page.removeCommentButton){
 		page.removeCommentButton
+			.setAttribute('disabled', true);
+	}
+	if (page.saveArchiveButton){
+		page.saveArchiveButton
+			.setAttribute('disabled', true);
+	}
+	if (page.clearArchiveButton){
+		page.clearArchiveButton
 			.setAttribute('disabled', true);
 	}
 	if (page.widthInput){
@@ -987,8 +1002,10 @@ function initCanvas() {
 			page.heightInput.value + 'px';
 		page.heightInput.addEventListener('input', 
 			() => {
-				page.canvasDiv.style.height = page.heightInput.value + 'px';
-				page.imageDiv.style.height = page.heightInput.value + 'px';
+				page.canvasDiv.style.height =
+					page.heightInput.value + 'px';
+				page.imageDiv.style.height =
+					page.heightInput.value + 'px';
 			}
 		);
 	}
@@ -997,6 +1014,8 @@ function initCanvas() {
 			addCanvasDefaultFile();
 		}
 		if (page.layerInput){
+			page.layerInput.onkeydown = 
+				(e) => {e.stopPropagation()};
 			page.layerInput.oninput = () => {
 				renameCurrentLayer(page.layerInput.value);
 			};
@@ -1097,7 +1116,6 @@ function launch(mode){
 		memory.fileLayers = [];
 		memory.currentFile = 0;
 		memory.currentLayer = 0;
-		memory.counter = 0;
 	}
 	
 	if (currentLanguage == '')

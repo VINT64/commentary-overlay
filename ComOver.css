@@ -57,6 +57,11 @@ div#canvasDiv {
 	position: absolute;
 	border: 5px solid #000;
 }
+
+input.numInput {
+	max-width: 50px;
+}
+
 div.canvasOverlayDiv {
 	cursor: pointer;
 }
