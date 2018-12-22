@@ -1,4 +1,4 @@
-/* By: VINT64
+6/* By: VINT64
 All code copied from Stack Overflow and
 other places keeps its respective licenses.
 All original code is unlicensed (more info
@@ -35,6 +35,10 @@ const templates = {
 					'<button type="button" ' +
 						'id="loadButton" ' +
 						'onclick="triggerFileInput()">' +
+					'</button>' +
+					'<button type="button" ' +
+						'id="saveArchiveButton" ' +
+						'onclick="saveArchive()">' +
 					'</button>' +
 				'</p>' +
 				'<p>' +
@@ -196,6 +200,9 @@ const langs = [
 		removeLayerConfirm: 'Удалить текущий слой?',
 		removeAllCommentsConfirm: 
 			'Удалить все комментарии?',
+		LoseDefaultLayerConfirm: 
+			'При смене режима холст без изображения ' +
+			'будет потерян. Продолжить?',
 		removeArchiveConfirm: 
 			'Архив будет потерян, продолжить?',
 		lastLayerAlert: 'Нельзя удалить последний слой',
@@ -219,6 +226,9 @@ const langs = [
 		layerLabel: 'Layer: ',
 		removeLayerConfirm: 'Delete current layer?',
 		removeAllCommentsConfirm: 'Remove all comments?',
+		LoseDefaultLayerConfirm: 
+			'With mode change canvas without image ' +
+			'will be lost. Continue?',
 		removeArchiveConfirm: 
 			'Archive will be lost, continue?',
 		lastLayerAlert: 'Cannot delete last layer',
@@ -377,17 +387,19 @@ function triggerFileInput(){
 function goLeft(){
 	if (memory.filenames.images.length == 0) return;
 	(memory.currentFile - 1 < 0) ?
-		saveAndSelectFile(memory.filenames
-		.images.length - 1) :
-		saveAndSelectFile(memory.currentFile - 1);
+		saveAndSelectFileAndLayer(
+			memory.filenames.images.length - 1, 0) :
+		saveAndSelectFileAndLayer(
+			memory.currentFile - 1, 0);
 }
 
 function goRight(){
 	if (memory.filenames.images.length == 0) return;
 	(memory.currentFile + 1 >=
 		memory.filenames.images.length) ?
-			saveAndSelectFile(0) :
-			saveAndSelectFile(memory.currentFile + 1);
+			saveAndSelectFileAndLayer(0, 0) :
+			saveAndSelectFileAndLayer(
+				memory.currentFile + 1, 0);
 }
 
 function selectFile(i){ 
@@ -423,6 +435,13 @@ function selectFile(i){
 				(error) => {console.log(e.message);}
 			);
 	}
+}
+
+function selectFileAndLayer(f, l){
+	memory.currentLayer = l;
+	// after finishing json download selectLayer is called
+	// with memory.currentLayer parameter
+	selectFile(f);
 }
 
 function layersToJson(){
@@ -475,9 +494,9 @@ function saveCurrentFileToArchive(){
 	});
 }
 
-function saveAndSelectFile(index){
+function saveAndSelectFileAndLayer(index, layer){
 	saveCurrentFileToArchive().then(() =>
-		selectFile(index));
+		selectFileAndLayer(index, layer));
 }
 
 function clearAllComments(){
@@ -548,6 +567,8 @@ function selectLayer(i){
 		console.log('Tried to select layer: ' + i +
 			', number of layers: ' + 
 			memory.fileLayers.length);
+		console.log('resetting current Layer to 0...')
+		memory.currentLayer = 0;
 		return;
 	}
 	memory.currentLayer = i;
@@ -572,6 +593,9 @@ function selectLayer(i){
 	if (page.layerInput){
 		page.layerInput.value =	memory.fileLayers[i].name;
 	}
+	if (page.layerSelect && 
+		page.layerSelect.selectedIndex != i)
+		page.layerSelect.selectedIndex = i;
 }
 
 function updateLanguage(){
@@ -621,13 +645,7 @@ function renameCurrentLayer(name){
 
 function updateLayer(){ 
 	if (!page.layerSelect) return;
-	
 	selectLayer(page.layerSelect.selectedIndex);
-}
-
-function addCanvasDefaultFile(){
-	addEmptyLayer();
-	selectLayer(0);
 }
 
 function addSelectCommentListener(el){
@@ -700,7 +718,7 @@ function manageLoadedJson(event){
 		});
 		addLayer(jsonLayer.layer_name, comments);
 	});
-	selectLayer(0);		
+	selectLayer(memory.currentLayer);		
 }
 
 function newJsonCommentAsString(version, imageName,
@@ -781,7 +799,7 @@ function loadArchive(){
 				e.target.result,
 				{binary: true});
 				finishLoading()
-					.then(() => selectFile(0));
+					.then(() => selectFileAndLayer(0, 0));
 		}
 		reader.singleImage.readAsBinaryString(f);
 		return;
@@ -811,7 +829,8 @@ function loadArchive(){
 		
 		memory.filenames = tempFiles;
 		memory.archive = z; 		
-		finishLoading().then(() => selectFile(0));
+		finishLoading().then(() => 
+			selectFileAndLayer(0, 0));
 	},
 	(e) => {
 		alert(getLanguagePhrase('notImageOrArchiveAlert'));
@@ -932,6 +951,11 @@ function initCanvas() {
 			.comments.push(container);
 	}
 	
+	function addCanvasDefaultFile(){
+		addEmptyLayer();
+		selectLayer(0);
+	}
+	
 	if(!page.canvasDiv) 
 		return;
 	
@@ -964,8 +988,6 @@ function initCanvas() {
 		};
 	}
 	disableIfPresent(page.removeCommentButton, true);
-	disableIfPresent(page.saveArchiveButton, true);
-	disableIfPresent(page.clearArchiveButton, true);
 	if (page.widthInput){
 		page.canvasDiv.style.width = 
 			page.widthInput.value + 'px';
@@ -995,7 +1017,7 @@ function initCanvas() {
 		);
 	}
 	if (page.layerSelect){
-		if (page.layerSelect.length == 0){
+		if (!memory.archive && memory.fileLayers == 0){
 			addCanvasDefaultFile();
 		}
 		if (page.layerInput){
@@ -1080,6 +1102,15 @@ function initPage(){
 		page.languageSelect.value = currentLanguage;
 	}
 	setPageLanguage();
+	
+	if(memory.archive){
+		saveAndSelectFileAndLayer(memory.currentFile,
+			memory.currentLayer);
+	}
+	else {
+		disableIfPresent(page.saveArchiveButton, true);
+		disableIfPresent(page.clearArchiveButton, true);
+	}
 }
 
 function launch(mode){
@@ -1105,9 +1136,13 @@ function launch(mode){
 	
 	if (currentLanguage == '')
 		currentLanguage = langs[0].id;
-	
+	if (!memory.archive && memory.fileLayers.length == 1){
+		//if (!confirm(getLanguagePhrase(
+		//'LoseDefaultLayerConfirm'))) return;
+		memory.fileLayers = [];
+	}
 	clearPage();
-	clearMemory();	
+	//clearMemory();	
 	
 	let template = newElement('template');
 	switch(mode){
@@ -1119,6 +1154,7 @@ function launch(mode){
 			break;
 		default:
 			console.log('Unknown mode: ', mode);
+			template.innerHTML = '';
 			return;
 	}
 	document.body.appendChild(template.content.firstChild);
