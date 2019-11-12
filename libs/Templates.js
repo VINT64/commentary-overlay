@@ -144,3 +144,20 @@ const templates = {
 			</div>
 		</div>`
 }
+
+function newTemplate(mode){	
+	let template = newElement('template');
+	switch(mode){
+		case 'viewer':
+			template.innerHTML = templates.viewerHTML;
+			break;
+		case 'editor':
+			template.innerHTML = templates.editorHTML;
+			break;
+		default:
+			console.log('Unknown mode: ', mode);
+			template.innerHTML = '';
+			return null;
+	}
+	return template;
+}

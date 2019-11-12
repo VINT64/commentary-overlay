@@ -54,3 +54,39 @@ const langs = [
 		notImageOrArchiveAlert: 'Not an image or archive!'
 	}
 ];
+
+let currentLanguage = '';
+
+function setPageLanguage(){
+	langs.forEach((lang, i, a) => {
+		if (lang.id == currentLanguage)
+			for (let key in lang){
+				let el = getElement(key);
+				if (el)
+					el.textContent = lang[key];
+			}
+	});
+}
+
+function getLanguagePhrase(phrase){
+	let ret = '';
+	langs.forEach((lang, i, a) => {
+		if (lang.id == currentLanguage)
+			ret = lang[phrase];
+	});
+	return ret;
+}
+
+function addLangOptionsToSelect(select){
+	langs.forEach((lang, i, a) => {
+		let option = newElement('option');
+		option.text = lang.id;
+		select.add(option);
+	});
+	select.value = currentLanguage;
+}
+
+function setDefaultLanguageIfEmpty(){
+	if (currentLanguage == '')
+		currentLanguage = langs[0].id;
+}

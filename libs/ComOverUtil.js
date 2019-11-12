@@ -32,7 +32,6 @@ const memory = { archive: null,
 	currentFile: 0, currentLayer: 0, 
 };
 
-let currentLanguage = '';
 
 const reader = {
 	image: new FileReader(),
@@ -57,29 +56,6 @@ window.addEventListener('keydown', (e) => {
 	}
 });
 
-function setPageLanguage(){
-	langs.forEach((lang, i, a) => {
-		if (lang.id == currentLanguage)
-			for (let key in lang){
-				let el = getElement(key);
-				if (el)
-					el.textContent = lang[key];
-			}
-	});
-}
-
-function getLanguagePhrase(phrase){
-	let ret = '';
-	langs.forEach((lang, i, a) => {
-		if (lang.id == currentLanguage)
-			ret = lang[phrase];
-	});
-	return ret;
-}
-
-function getElement(id){
-	return document.getElementById(id);
-}
 
 function getComOverPair(comOver){
 	let comments = memory.fileLayers[memory.currentLayer]
@@ -90,13 +66,7 @@ function getComOverPair(comOver){
 	return null;
 }
 
-function newElement(tag){
-	return document.createElement(tag);
-}
 
-function newLayer(name, list){
-	return {name: name, comments: list};
-}
 
 function newMemoryComment(comment, commentOverlay){
 	return {commentDiv: comment, 
@@ -135,14 +105,6 @@ function removeComment(comOver){
 			comments.splice(i, 1); 
 			break;
 		}
-}
-
-function disableIfPresent(element, flag){
-	if (!element) return;
-	if (flag)
-		element.setAttribute('disabled', true);
-	else
-		element.removeAttribute('disabled');
 }
 
 function deselectComment(){
@@ -402,6 +364,11 @@ function updateLanguage(){
 }
 
 function addLayer(name, comments){
+	
+	function newLayer(name, list){
+		return {name: name, comments: list};
+	}
+
 	let l = newLayer(name, comments);
 	if (page.layerSelect){
 		let option = newElement('option');
@@ -891,12 +858,7 @@ function initPage(){
 			.addEventListener('change',	loadArchive);
 	}
 	if (page.languageSelect){
-		langs.forEach((lang, i, a) => {
-			let option = newElement('option');
-			option.text = lang.id;
-			page.languageSelect.add(option);
-		});
-		page.languageSelect.value = currentLanguage;
+		addLangOptionsToSelect(page.languageSelect);
 	}
 	setPageLanguage();
 	
@@ -931,8 +893,7 @@ function launch(mode){
 		memory.currentLayer = 0;
 	}
 	
-	if (currentLanguage == '')
-		currentLanguage = langs[0].id;
+	setDefaultLanguageIfEmpty();
 	if (!memory.archive && memory.fileLayers.length == 1){
 		//if (!confirm(getLanguagePhrase(
 		//'LoseDefaultLayerConfirm'))) return;
@@ -941,19 +902,9 @@ function launch(mode){
 	clearPage();
 	//clearMemory();	
 	
-	let template = newElement('template');
-	switch(mode){
-		case 'viewer':
-			template.innerHTML = templates.viewerHTML;
-			break;
-		case 'editor':
-			template.innerHTML = templates.editorHTML;
-			break;
-		default:
-			console.log('Unknown mode: ', mode);
-			template.innerHTML = '';
-			return;
-	}
+	let template = newTemplate(mode);
+	if (template === null)
+		return;
 	document.body.appendChild(template.content.firstChild);
 	initPage();
 	
