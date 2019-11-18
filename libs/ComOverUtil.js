@@ -56,7 +56,6 @@ window.addEventListener('keydown', (e) => {
 	}
 });
 
-
 function getComOverPair(comOver){
 	let comments = memory.fileLayers[memory.currentLayer]
 		.comments;
@@ -66,9 +65,7 @@ function getComOverPair(comOver){
 	return null;
 }
 
-
-
-function newMemoryComment(comment, commentOverlay){
+function newCommentContainer(comment, commentOverlay){
 	return {commentDiv: comment, 
 		commentOverlayDiv: commentOverlay};
 }
@@ -162,6 +159,15 @@ function goRight(){
 }
 
 function selectFile(i){ 
+
+	function useImageReader(blob){
+		reader.image.readAsDataURL(blob);
+	}
+	
+	function useJSONReader(blob){
+		reader.json.readAsText(blob);
+	}
+	
 	if (i < 0 || i >= memory.filenames.images.length){
 		console.log('Tried to select image: ' + i +
 			', number of images: ' + 
@@ -179,19 +185,15 @@ function selectFile(i){
 
 	memory.archive.file(memory.filenames.images[
 		memory.currentFile])
-		.async('blob').then((blob) => {
-			reader.image.readAsDataURL(blob);
-		},
-		(error) => {console.log(error.message);}
+		.async('blob').then(useImageReader,
+		logError
 		);
 	
 	if (memory.filenames.comments.length > 0){
 		memory.archive.file(memory.filenames.comments[
 			memory.currentFile])
-			.async('blob').then((blob) => {
-					reader.json.readAsText(blob);
-				},
-				(error) => {console.log(e.message);}
+			.async('blob').then(useJSONReader,
+				logError
 			);
 	}
 }
@@ -247,7 +249,7 @@ function saveCurrentFileToArchive(){
 			.async('blob').then((blob) => {
 				f.readAsText(blob);
 			},
-			(error) => {console.log(e.message);}
+			logError
 		);
 		
 	});
@@ -325,8 +327,7 @@ function selectLayer(i){
 	if (i < 0 || i >= memory.fileLayers.length){
 		console.log('Tried to select layer: ' + i +
 			', number of layers: ' + 
-			memory.fileLayers.length);
-		console.log('resetting current Layer to 0...')
+			memory.fileLayers.length + '\nresetting current Layer to 0...');
 		memory.currentLayer = 0;
 		return;
 	}
@@ -467,7 +468,7 @@ function manageLoadedJson(event){
 		let comment = newComment(jsonComment.x1,
 			jsonComment.y2 + 5, jsonComment.text,
 			commentOverlay);
-		let container = newMemoryComment(comment,
+		let container = newCommentContainer(comment,
 			commentOverlay);
 		list.push(container);
 	}
@@ -710,7 +711,7 @@ function initCanvas() {
 			parseInt(el.style.height) + 5, '', el);
 		page.canvasDiv.appendChild(com);
 		addSelectCommentListener(el);
-		let container = newMemoryComment(com, el);
+		let container = newCommentContainer(com, el);
 		memory.fileLayers[memory.currentLayer]
 			.comments.push(container);
 	}
