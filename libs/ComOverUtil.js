@@ -4,11 +4,11 @@ other places keeps its respective licenses.
 All original code is unlicensed (more info
 https://unlicense.org ) */
 
-const MAGIC_NUMBER = 64; // should be large
 const IMAGE_ID = 'img';
 const DEFAULT_LAYER_NAME = 'default';
 const DEFAULT_ROOT_FOLDER_NAME = 'root';
 const DEFAULT_IMAGE_NAME = 'default';
+const COMMENT_VERTICAL_OFFSET = 5;
 const regexp = {
 	extension: /(?:\.([^.]+))?$/, 
 	filename: /([^\/]+)(?:\.[^.\/]+)$/, // without ext
@@ -27,11 +27,11 @@ const page = { imageDiv: null,
 	languageSelect: null
 };
 
-const memory = { archive: null,
-	filenames: {images: [], comments: []}, fileLayers: [],
-	currentFile: 0, currentLayer: 0, 
-};
-
+function clearPage(){
+	for (let key in page ) {
+		page[key] = null;
+	}
+}
 
 const reader = {
 	image: new FileReader(),
@@ -56,41 +56,10 @@ window.addEventListener('keydown', (e) => {
 	}
 });
 
-function getComOverPair(comOver){
-	let comments = memory.fileLayers[memory.currentLayer]
-		.comments;
-	for(let i = comments.length - 1; i >= 0; i--)
-		if (comments[i].commentOverlayDiv === comOver)
-			return comments[i];
-	return null;
-}
-
-function newCommentContainer(comment, commentOverlay){
-	return {commentDiv: comment, 
-		commentOverlayDiv: commentOverlay};
-}
-
-function newComment(x, y, text, commentOverlay){
-	let com = newElement('div');
-	com.style.zIndex = MAGIC_NUMBER;
-	com.classList.add('commentDiv');
-	com.style.left = x + 'px';
-	com.style.top = y + 'px';
-	com.appendChild(document.createTextNode(text));
-	com.style.visibility = 'hidden';
-	commentOverlay.addEventListener('mouseover', () => {
-		com.style.visibility = 'visible';
-	});
-	commentOverlay.addEventListener('mouseout', () => {
-		com.style.visibility = 'hidden';
-	});
-	return com;
-}
 
 function removeComment(comOver){
 	if (!comOver) return;
-	let comments = memory
-		.fileLayers[memory.currentLayer].comments;
+	let comments = getMemoryCurrentComments();
 	for(let i = comments.length - 1; i >= 0; i--)
 		if (comments[i].commentOverlayDiv === comOver){
 			if (comments[i].commentDiv)
@@ -98,7 +67,7 @@ function removeComment(comOver){
 					.removeChild(comments[i].commentDiv);
 			page.canvasDiv
 				.removeChild(comOver);
-			// don't use getComOverPair
+			// don't use getMemoryComOverPair
 			comments.splice(i, 1); 
 			break;
 		}
@@ -109,8 +78,8 @@ function deselectComment(){
 		page.selectedComment.classList.remove('selected');
 	}
 	page.selectedComment = null;
-	disableIfPresent(page.commentInput, true);
-	disableIfPresent(page.removeCommentButton, true);
+	disableElementIfPresent(page.commentInput, true);
+	disableElementIfPresent(page.removeCommentButton, true);
 }
 
 function removeSelectedComment(){
@@ -122,12 +91,13 @@ function selectComment(el){
 	deselectComment();
 	if (el){
 		el.classList.add('selected');
-		let com = getComOverPair(el);
+		let com = getMemoryComOverPair(el);
 		if (com.commentDiv)
 			page.commentInput.value = 
 				com.commentDiv.textContent;
-		disableIfPresent(page.removeCommentButton, false);
-		disableIfPresent(page.commentInput, false);
+		disableElementIfPresent(
+			page.removeCommentButton, false);
+		disableElementIfPresent(page.commentInput, false);
 		if (page.commentInput){
 			page.commentInput.focus();
 		}
@@ -287,8 +257,8 @@ function clearCanvas(){
 function clearImage(){
 	
 	function unlock_size(){
-		disableIfPresent(page.widthInput, false);
-		disableIfPresent(page.heightInput, false);
+		disableElementIfPresent(page.widthInput, false);
+		disableElementIfPresent(page.heightInput, false);
 		page.imageDiv.style.width =
 			page.widthInput.value + 'px';
 		page.imageDiv.style.height =
@@ -311,8 +281,8 @@ function clearArchive(){
 	memory.filenames = {images: [], comments: []}; 
 	if(page.fileInfo)
 		page.fileInfo.textContent = '';
-	disableIfPresent(page.saveArchiveButton, true);
-	disableIfPresent(page.clearArchiveButton, true);
+	disableElementIfPresent(page.saveArchiveButton, true);
+	disableElementIfPresent(page.clearArchiveButton, true);
 }
 	
 function removeFileLayers(){
@@ -335,7 +305,8 @@ function selectLayer(i){
 	deselectComment();
 	clearAllComments();
 	
-	memory.fileLayers[i].comments.forEach((com, n, a) => {
+	let comments = getMemoryCurrentComments(); // i
+	comments.forEach((com, n, a) => {
 			if (page.allCommentsDiv){
 				page.allCommentsDiv
 					.appendChild(com.commentDiv);
@@ -431,8 +402,8 @@ function manageLoadedImage(event){
 		page.canvasDiv.style.height = h + 'px';
 		page.imageDiv.style.width = null;
 		page.imageDiv.style.height = null;
-		disableIfPresent(page.widthInput, true);
-		disableIfPresent(page.heightInput, true);
+		disableElementIfPresent(page.widthInput, true);
+		disableElementIfPresent(page.heightInput, true);
 	}
 
 	clearImage();
@@ -465,10 +436,10 @@ function manageLoadedJson(event){
 				.add('canvasOverlayDiv');
 			addSelectCommentListener(commentOverlay);
 		}
-		let comment = newComment(jsonComment.x1,
-			jsonComment.y2 + 5, jsonComment.text,
-			commentOverlay);
-		let container = newCommentContainer(comment,
+		let comment = newCommentElement(jsonComment.x1,
+			jsonComment.y2 + COMMENT_VERTICAL_OFFSET,
+			jsonComment.text, commentOverlay);
+		let container = newMemoryCommentContainer(comment,
 			commentOverlay);
 		list.push(container);
 	}
@@ -483,7 +454,7 @@ function manageLoadedJson(event){
 		});
 		addLayer(jsonLayer.layer_name, comments);
 	});
-	selectLayer(memory.currentLayer);		
+	selectLayer(getMemoryCurrentLayer());		
 }
 
 function newJsonCommentAsString(version, imageName,
@@ -543,8 +514,10 @@ function loadArchive(){
 				i < memory.filenames.images.length; i++)
 				await addDefaultJsonToArchive(i);
 		}
-		disableIfPresent(page.saveArchiveButton, false);
-		disableIfPresent(page.clearArchiveButton, false);
+		disableElementIfPresent(
+			page.saveArchiveButton, false);
+		disableElementIfPresent(
+			page.clearArchiveButton, false);
 	}
 	
 	let f = page.fileInput.files[0];
@@ -705,15 +678,16 @@ function initCanvas() {
 			page.canvasDiv.removeChild(el);
 			return;
 		}
-		let com = newComment(
+		let com = newCommentElement(
 			parseInt(el.style.left),
 			parseInt(el.style.top) + 
-			parseInt(el.style.height) + 5, '', el);
+			parseInt(el.style.height) +
+			COMMENT_VERTICAL_OFFSET, '', el);
 		page.canvasDiv.appendChild(com);
 		addSelectCommentListener(el);
-		let container = newCommentContainer(com, el);
-		memory.fileLayers[memory.currentLayer]
-			.comments.push(container);
+		let container = newMemoryCommentContainer(com, el);
+		let comments = getMemoryCurrentComments();
+		comments.push(container);
 	}
 	
 	function addCanvasDefaultFile(){
@@ -743,16 +717,17 @@ function initCanvas() {
 					break;
 				}
 			};
-		disableIfPresent(page.commentInput, true);
+		disableElementIfPresent(page.commentInput, true);
 		page.commentInput.oninput = () => {
 			if (!page.selectedComment) return;
-			let com = getComOverPair(page.selectedComment);
+			let com = getMemoryComOverPair(
+				page.selectedComment);
 			if (!com.commentDiv) return;
 			com.commentDiv.textContent =
 				commentInput.value;
 		};
 	}
-	disableIfPresent(page.removeCommentButton, true);
+	disableElementIfPresent(page.removeCommentButton, true);
 	if (page.widthInput){
 		page.canvasDiv.style.width = 
 			page.widthInput.value + 'px';
@@ -865,33 +840,22 @@ function initPage(){
 	
 	if(memory.archive){
 		saveAndSelectFileAndLayer(memory.currentFile,
-			memory.currentLayer);
+			getMemoryCurrentLayer());
 	}
 	else {
-		disableIfPresent(page.saveArchiveButton, true);
-		disableIfPresent(page.clearArchiveButton, true);
+		disableElementIfPresent(
+			page.saveArchiveButton, true);
+		disableElementIfPresent(
+			page.clearArchiveButton, true);
 	}
 }
 
 function launch(mode){
 	
-	function clearPage(){
-		while(document.body.firstChild){
-			document.body.removeChild(
-				document.body.firstChild);
-		}
-		for (let key in page ) {
-			page[key] = null;
-		}
-	}
-	
-	function clearMemory(){
-		memory.archive = null;
-		memory.filenames.images = [];
-		memory.filenames.comments = [];
-		memory.fileLayers = [];
-		memory.currentFile = 0;
-		memory.currentLayer = 0;
+	function resetView(){
+		clearDocument();
+		clearPage();
+		//clearMemory();
 	}
 	
 	setDefaultLanguageIfEmpty();
@@ -900,8 +864,8 @@ function launch(mode){
 		//'LoseDefaultLayerConfirm'))) return;
 		memory.fileLayers = [];
 	}
-	clearPage();
-	//clearMemory();	
+
+	resetView();
 	
 	let template = newTemplate(mode);
 	if (template === null)

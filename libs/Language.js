@@ -1,3 +1,9 @@
+/* By: VINT64
+All code copied from Stack Overflow and
+other places keeps its respective licenses.
+All original code is unlicensed (more info
+https://unlicense.org ) */
+
 const langs = [
 	{	
 		id: 'ru',
