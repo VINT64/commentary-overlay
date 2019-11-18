@@ -111,21 +111,21 @@ function triggerFileInput(){
 }
 
 function goLeft(){
-	if (memory.filenames.images.length == 0) return;
-	(memory.currentFile - 1 < 0) ?
-		saveAndSelectFileAndLayer(
-			memory.filenames.images.length - 1, 0) :
-		saveAndSelectFileAndLayer(
-			memory.currentFile - 1, 0);
+	let length = getMemoryImageListLength();
+	let currentFile = getMemoryCurrentFile();
+	if (length == 0) return;
+	(currentFile - 1 < 0) ?
+		saveAndSelectFileAndLayer(length - 1, 0) :
+		saveAndSelectFileAndLayer(currentFile - 1, 0);
 }
 
 function goRight(){
-	if (memory.filenames.images.length == 0) return;
-	(memory.currentFile + 1 >=
-		memory.filenames.images.length) ?
+	let length = getMemoryImageListLength();
+	let currentFile = getMemoryCurrentFile();
+	if (length == 0) return;
+	(currentFile + 1 >= length) ?
 			saveAndSelectFileAndLayer(0, 0) :
-			saveAndSelectFileAndLayer(
-				memory.currentFile + 1, 0);
+			saveAndSelectFileAndLayer(currentFile + 1, 0);
 }
 
 function selectFile(i){ 
@@ -138,30 +138,42 @@ function selectFile(i){
 		reader.json.readAsText(blob);
 	}
 	
-	if (i < 0 || i >= memory.filenames.images.length){
+	let imageListLength = getMemoryImageListLength()
+	if (i < 0 || i >= imageListLength){
 		console.log('Tried to select image: ' + i +
-			', number of images: ' + 
-			memory.filenames.images.length);
+			', number of images: ' + imageListLength);
 		return;
 	}
-	memory.currentFile = i;
-	
+	setMemoryCurrentFile(i);
+	let currentFile = getMemoryCurrentFile();
 	if(page.fileInfo){
 		page.fileInfo.textContent =
-			memory.filenames.images[memory.currentFile] +
-			' ' + (memory.currentFile + 1) + '/' +
-			memory.filenames.images.length + ' ';
+			getMemoryImageName(currentFile) +
+			' ' + (currentFile + 1) + '/' +
+			imageListLength + ' ';
 	}
 
-	memory.archive.file(memory.filenames.images[
-		memory.currentFile])
+	let archive = getMemoryArchive();
+	let currentImage = getMemoryImageName(currentFile);
+	if (currentImage === null){
+		console.log('selectFile panic, ' +
+			'current image name is null');
+		return;
+	}
+	archive.file(currentImage)
 		.async('blob').then(useImageReader,
 		logError
-		);
+		);	
 	
-	if (memory.filenames.comments.length > 0){
-		memory.archive.file(memory.filenames.comments[
-			memory.currentFile])
+	if (getMemoryCommentFileListLength() > 0){
+		let currentCommentFile = 
+			getMemoryCommentFileName(currentFile);
+		if (currentImage === null){
+			console.log('selectFile panic, ' +
+				'current comment file name is null');
+			return;
+		}
+		archive.file(currentCommentFile)
 			.async('blob').then(useJSONReader,
 				logError
 			);
@@ -169,9 +181,9 @@ function selectFile(i){
 }
 
 function selectFileAndLayer(f, l){
-	memory.currentLayer = l;
+	setMemoryNextLayer(l);
 	// after finishing json download selectLayer is called
-	// with memory.currentLayer parameter
+	// with memory.nextLayer parameter
 	selectFile(f);
 }
 
@@ -454,7 +466,8 @@ function manageLoadedJson(event){
 		});
 		addLayer(jsonLayer.layer_name, comments);
 	});
-	selectLayer(getMemoryCurrentLayer());		
+	selectLayer(getMemoryNextLayer());
+	setMemoryNextLayer(0);
 }
 
 function newJsonCommentAsString(version, imageName,

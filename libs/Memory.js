@@ -6,7 +6,8 @@ https://unlicense.org ) */
 
 const memory = { archive: null,
 	filenames: {images: [], comments: []},
-	fileLayers: [],	currentFile: 0, currentLayer: 0, 
+	fileLayers: [],	currentFile: 0, currentLayer: 0,
+	nextLayer: 0,
 };
 
 function clearMemory(){
@@ -16,6 +17,7 @@ function clearMemory(){
 	memory.fileLayers = [];
 	memory.currentFile = 0;
 	memory.currentLayer = 0;
+	memory.nextLayer = 0;
 }
 
 function newMemoryCommentContainer(comment, commentOverlay){
@@ -23,16 +25,92 @@ function newMemoryCommentContainer(comment, commentOverlay){
 		commentOverlayDiv: commentOverlay};
 }
 
+function getMemoryArchive(){
+	return memory.archive;
+}
+
 function getMemoryCurrentLayer(){
 	return memory.currentLayer;
 }
 
-function getMemoryCommentsFromLayer(layerNum){
-	if (layerNum < 0 || layerNum >=
-		memory.fileLayers.length){
+function setMemoryCurrentLayer(i){
+	if (i < 0 || i >= memory.fileLayers.length){
+		console.log(
+			'Bad param for setMemoryCurrentLayer: ' + i);
+	}
+	else{
+		memory.currentLayer = i;
+	}
+}
+
+function getMemoryNextLayer(){
+	return memory.nextLayer;
+}
+
+function setMemoryNextLayer(i){
+	memory.nextLayer = i;
+}
+
+function getMemoryCurrentFile(){
+	return memory.currentFile;
+}
+
+function setMemoryCurrentFile(i){
+	if (i < 0 || i >= memory.filenames.images.length){
+		console.log(
+			'Bad param for setMemoryCurrentFile: ' + i);
+	}
+	else{
+		memory.currentFile = i;
+	}
+}
+
+function getMemoryImageName(i){
+	if (i < 0 || i >= memory.filenames.images.length){
+		console.log(
+			'Bad param for getMemoryImageName: ' + i);
 		return null;
 	}
-	return memory.fileLayers[layerNum].comments;
+	return memory.filenames.images[i];
+}
+
+function getMemoryCommentFileName(i){
+	if (i < 0 || i >= memory.filenames.comments.length){
+		console.log(
+			'Bad param for getMemoryCommentFileName: ' + i);
+		return null;
+	}
+	return memory.filenames.comments[i];
+}
+
+function getMemoryLayersListLength(){
+	return memory.fileLayers.length;
+}
+
+function getMemoryImageListLength(){
+	return memory.filenames.images.length;
+}
+
+function getMemoryCommentFileListLength(){
+	return memory.filenames.comments.length;
+}
+
+function getMemoryLayer(i){
+	if (i < 0 || i >= memory.fileLayers.length){
+		console.log(
+			'Bad param for getMemoryLayer: ' + i);
+		return null;
+	}
+	return memory.fileLayers[i];
+}
+
+function getMemoryCommentsFromLayer(i){
+	if (i < 0 || i >= memory.fileLayers.length){
+		console.log(
+			'Bad param for getMemoryCommentLayer: ' + i);
+		return null;
+	}
+	return memory.fileLayers[i].comments;
 }
 
 function getMemoryCurrentComments(){
