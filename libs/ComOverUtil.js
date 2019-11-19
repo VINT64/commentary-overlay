@@ -6,15 +6,8 @@ https://unlicense.org ) */
 
 const IMAGE_ID = 'img';
 const DEFAULT_LAYER_NAME = 'default';
-const DEFAULT_ROOT_FOLDER_NAME = 'root';
 const DEFAULT_IMAGE_NAME = 'default';
 const COMMENT_VERTICAL_OFFSET = 5;
-const regexp = {
-	extension: /(?:\.([^.]+))?$/, 
-	filename: /([^\/]+)(?:\.[^.\/]+)$/, // without ext
-	imageMime: /^(image\/)/,
-	path: /(.+\/)?(?:[^\/]+)?/
-};
 
 const page = { imageDiv: null,
 	fileInput: null, allCommentsDiv: null,
@@ -129,7 +122,7 @@ function goRight(){
 }
 
 function selectFile(i){ 
-
+	
 	function useImageReader(blob){
 		reader.image.readAsDataURL(blob);
 	}
@@ -144,22 +137,26 @@ function selectFile(i){
 			', number of images: ' + imageListLength);
 		return;
 	}
-	setMemoryCurrentFile(i);
-	let currentFile = getMemoryCurrentFile();
-	if(page.fileInfo){
-		page.fileInfo.textContent =
-			getMemoryImageName(currentFile) +
-			' ' + (currentFile + 1) + '/' +
-			imageListLength + ' ';
+	if (!setMemoryCurrentFile(i)){
+		console.log('Failed to select file: ' + i);
+		return;
 	}
-
-	let archive = getMemoryArchive();
-	let currentImage = getMemoryImageName(currentFile);
+	let currentFile = i;
+	let currentImage = getMemoryImageNameWithPath(
+		currentFile);
 	if (currentImage === null){
 		console.log('selectFile panic, ' +
 			'current image name is null');
 		return;
 	}
+	if(page.fileInfo){
+		page.fileInfo.textContent =
+			currentImage +
+			' ' + (currentFile + 1) + '/' +
+			imageListLength + ' ';
+	}
+
+	let archive = getMemoryArchive();
 	archive.file(currentImage)
 		.async('blob').then(useImageReader,
 		logError
@@ -182,8 +179,6 @@ function selectFile(i){
 
 function selectFileAndLayer(f, l){
 	setMemoryNextLayer(l);
-	// after finishing json download selectLayer is called
-	// with memory.nextLayer parameter
 	selectFile(f);
 }
 
@@ -207,8 +202,15 @@ function layersToJson(){
 	}
 	
 	let layers = [];
-	for (let i = 0; i < memory.fileLayers.length; i++){
-		let l = memory.fileLayers[i];
+	let length = getMemoryLayersListLength();
+	for (let i = 0; i < length; i++){
+		let l = getMemoryLayer(i);
+		if (l === null){
+			console.log('layersToJson panic, ' +
+			'layer corruption at ' + i);
+			layers.push({layer_name: '', comments: []});
+			continue;
+		}
 		let coms = commentsToJson(l.comments);
 		layers.push({layer_name: l.name,
 			comments: coms});
@@ -219,16 +221,16 @@ function layersToJson(){
 function saveCurrentFileToArchive(){
 	return new Promise((resolve, reject) => {
 		let f = new FileReader();
+		let filename = getMemoryCurrentCommentFileName();
+		let archive = getMemoryArchive();
 		f.onload = (e) => {
 			file = JSON.parse(event.target.result);
 			file.layers = layersToJson();
-			memory.archive.file(memory.filenames.comments[
-				memory.currentFile], JSON.stringify(file));
+			archive.file(filename, JSON.stringify(file));
 			resolve();
 		};
-		memory.archive.file(memory.filenames.comments[
-			memory.currentFile])
-			.async('blob').then((blob) => {
+		archive.file(filename).async('blob')
+			.then((blob) => {
 				f.readAsText(blob);
 			},
 			logError
@@ -289,8 +291,7 @@ function clearArchive(){
 	if (!confirm(getLanguagePhrase(
 		'removeArchiveConfirm'))) return;
 	clearImage();
-	memory.archive = null;
-	memory.filenames = {images: [], comments: []}; 
+	clearMemoryArchive();
 	if(page.fileInfo)
 		page.fileInfo.textContent = '';
 	disableElementIfPresent(page.saveArchiveButton, true);
@@ -298,7 +299,7 @@ function clearArchive(){
 }
 	
 function removeFileLayers(){
-	memory.fileLayers = [];
+	clearMemoryLayers();
 	if (!page.layerSelect) return;
 	for (let i = page.layerSelect.options.length - 1;
 		i >= 0; i--)
@@ -306,14 +307,18 @@ function removeFileLayers(){
 }
 
 function selectLayer(i){
-	if (i < 0 || i >= memory.fileLayers.length){
+	let LayersListLength = getMemoryLayersListLength();
+	if (i < 0 || i >= LayersListLength){
 		console.log('Tried to select layer: ' + i +
-			', number of layers: ' + 
-			memory.fileLayers.length + '\nresetting current Layer to 0...');
-		memory.currentLayer = 0;
+			', number of layers: ' + LayersListLength +
+			'\nresetting current Layer to 0...');
+		setMemoryCurrentLayer(0);
 		return;
 	}
-	memory.currentLayer = i;
+	if (!setMemoryCurrentLayer(i)){
+		console.log('Failed to select layer: ' + i);
+		return;
+	}
 	deselectComment();
 	clearAllComments();
 	
@@ -334,7 +339,7 @@ function selectLayer(i){
 	});
 
 	if (page.layerInput){
-		page.layerInput.value =	memory.fileLayers[i].name;
+		page.layerInput.value =	getMemoryCurrentLayerName();
 	}
 	if (page.layerSelect && 
 		page.layerSelect.selectedIndex != i)
@@ -348,18 +353,12 @@ function updateLanguage(){
 }
 
 function addLayer(name, comments){
-	
-	function newLayer(name, list){
-		return {name: name, comments: list};
-	}
-
-	let l = newLayer(name, comments);
 	if (page.layerSelect){
 		let option = newElement('option');
 		option.text = name;
 		page.layerSelect.add(option);
 	}
-	memory.fileLayers.push(l);
+	addMemoryLayerToCurrentFile(name, comments);
 }
 
 function addEmptyLayer(){
@@ -375,8 +374,8 @@ function removeCurrentLayer(){
 	}
 	if (!confirm(getLanguagePhrase('removeLayerConfirm')))
 		return;
-	memory.fileLayers
-		.splice(page.layerSelect.selectedIndex, 1);
+	removeMemoryLayerFromCurrentFile(
+		page.layerSelect.selectedIndex);
 	page.layerSelect.remove(
 		page.layerSelect.selectedIndex);
 	selectLayer(page.layerSelect.selectedIndex);
@@ -387,8 +386,8 @@ function renameCurrentLayer(name){
 		return;
 	page.layerSelect.options[
 		page.layerSelect.selectedIndex].text = name;
-		memory.fileLayers[
-			page.layerSelect.selectedIndex].name = name;
+	setMemoryLayerName(
+		page.layerSelect.selectedIndex, name);
 }
 
 function updateLayer(){ 
@@ -480,32 +479,15 @@ function newJsonCommentAsString(version, imageName,
 	});
 }
 
-function getImageNameNoPath(index){
-	let imageFullName = memory.filenames.images[index];
-	let path = imageFullName.match(regexp.path)[1];
-	return (path === undefined) ?
-		imageFullName : imageFullName.replace(path, '');
-}
-
 async function addDefaultJsonToArchive(index){
-	
-	function getJsonNameWithPath(index){
-		let imageFullName = memory.filenames.images[index];
-		let ext = imageFullName.match(regexp.extension)[1];
-		return (ext === undefined) ? imageFullName :
-			imageFullName.replace(ext, 'json');
-	}
-	
 	let size = await getImageSize(index);
-	let imageName = getImageNameNoPath(index);
+	let imageName = getMemoryImageNameNoPath(index);
 	let defaultLayer = {layer_name: DEFAULT_LAYER_NAME,
 		comments: []};
 	let body = newJsonCommentAsString(1, imageName,
 		size.w, size.h, [defaultLayer]);
 	
-	let jsonFullName = getJsonNameWithPath(index);
-	memory.filenames.comments[index] = jsonFullName;
-	memory.archive.file(jsonFullName, body);
+	RewriteMemoryCommentFile(index, body);
 }
 
 function loadArchive(){
@@ -517,14 +499,12 @@ function loadArchive(){
 	}
 	
 	async function finishLoading(){
-		if (memory.filenames.images.length <
-			memory.filenames.comments.length)
-			memory.filenames.comments.length =
-				memory.filenames.images.length;
-		if (memory.filenames.images.length >
-			memory.filenames.comments.length) {
-			for (let i = memory.filenames.comments.length;
-				i < memory.filenames.images.length; i++)
+		let imagesNum = getMemoryImageListLength();
+		let commentsNum = getMemoryCommentFileListLength();
+		if (imagesNum <	commentsNum)
+			TruncateMemoryCommentFilesList(imagesNum);
+		if (imagesNum >	commentsNum) {
+			for (let i = commentsNum; i < imagesNum; i++)
 				await addDefaultJsonToArchive(i);
 		}
 		disableElementIfPresent(
@@ -535,17 +515,13 @@ function loadArchive(){
 	
 	let f = page.fileInput.files[0];
 	if (!f) return;
-	if (f.type.match(regexp.imageMime)){
+	if (isRegexpImageMime(f.type)){
 		//image case
-		clean();
+		clean();		
 		
-		memory.archive = new JSZip();
-		imageName = DEFAULT_ROOT_FOLDER_NAME + '/'
-			+ f.name;
-		memory.filenames = {images: [imageName],
-			comments: []};
-		reader.singleImage.onload = (e) => {
-			memory.archive.file(
+		archive = initMemoryForSingleImage(f.name);
+		singleImage.onload = (e) => {
+			archive.file(
 				imageName,
 				e.target.result,
 				{binary: true});
@@ -558,28 +534,27 @@ function loadArchive(){
 		
 	JSZip.loadAsync(f).then((z) => {
 		// archive case
-		let tempFiles = {images: [], comments: []};
+		let tempImages = [];
+		let tempJsons = [];
 		z.forEach(function (relativePath, zipEntry) {
-			let ext = relativePath
-				.match(regexp.extension)[1]; 
+			let ext = getRegexpExtension(relativePath);
 			if( ext == 'png' || ext == 'jpg' ||
 				ext == 'jpeg' || ext == 'gif')
-				tempFiles.images.push(relativePath);
+				tempImages.push(relativePath);
 			if( ext == 'json')
-				tempFiles.comments.push(relativePath);
+				tempJsons.push(relativePath);
 		});
-		if (tempFiles.images.length < 1){
+		if (tempImages.length < 1){
 			alert(getLanguagePhrase('noImagesAlert'));
 			return;
 		}
 		
-		tempFiles.comments.sort();
-		tempFiles.images.sort();
+		tempJsons.sort();
+		tempImages.sort();
 		
 		clean();
 		
-		memory.filenames = tempFiles;
-		memory.archive = z; 		
+		initMemoryForArchive(z, tempImages, tempJsons);
 		finishLoading().then(() => 
 			selectFileAndLayer(0, 0));
 	},
@@ -601,19 +576,16 @@ function getImageSize(index){
 					h: image.naturalHeight});
 			image.src = e.target.result;
 		}
-		memory.archive.file(memory.filenames.images[index])
-			.async('blob').then((blob) => {
+		let imageName = getMemoryImageNameWithPath(index);
+		if (imageName === null){
+			reject('Image name not retrieved');
+		}
+		let archive = getMemoryArchive();
+		archive.file(imageName).async('blob')
+			.then((blob) => {
 				f.readAsDataURL(blob);
 			});
 	});
-}
-
-function dumpFiles(){
-	for (let i = 0; i < memory.filenames.images.length; i++)
-		console.log(memory.filenames.images[i]);
-	for (let i = 0; i < memory.filenames.comments.length;
-		i++)
-		console.log(memory.filenames.comments[i]);
 }
 
 function saveCurrentJson(){
@@ -621,25 +593,27 @@ function saveCurrentJson(){
 	if (!page.widthInput ||	!page.heightInput) return;
 	
 	let imageName = DEFAULT_IMAGE_NAME;
-	if (memory.filenames.images.length > 0)
-		imageName = getImageNameNoPath(memory.currentFile);
+	if (getMemoryImageListLength() > 0)
+		imageName = getMemoryImageNameNoPath(
+			getMemoryCurrentFile());
 	let layers = layersToJson();
 	let body = newJsonCommentAsString(1, imageName,
 		page.widthInput.value, page.heightInput.value,
 		layers);
 	let blob = new Blob([body],	
 		{type: 'application/json'});
-	let ext = imageName.match(regexp.extension)[1];
+	let ext = getRegexpExtension(imageName);
 	let jsonName = (ext === undefined) ? imageName :
-		imageName.replace(ext, 'json')
+		imageName.replace(ext, 'json');
 	saveAs(blob, jsonName);
 }
 
 function saveArchive(){
-	if (!memory.archive) return;
+	let archive = getMemoryArchive();
+	if (!archive) return;
 	
 	saveCurrentFileToArchive().then(() => {
-		memory.archive.generateAsync({type:'blob'})
+		archive.generateAsync({type:'blob'})
 			.then((blob) => {
 				saveAs(blob, '');
 			});
@@ -770,7 +744,7 @@ function initCanvas() {
 		);
 	}
 	if (page.layerSelect){
-		if (!memory.archive && memory.fileLayers == 0){
+		if (checkMemoryClear){
 			addCanvasDefaultFile();
 		}
 		if (page.layerInput){
@@ -851,8 +825,8 @@ function initPage(){
 	}
 	setPageLanguage();
 	
-	if(memory.archive){
-		saveAndSelectFileAndLayer(memory.currentFile,
+	if(getMemoryArchive()){
+		saveAndSelectFileAndLayer(getMemoryCurrentFile(),
 			getMemoryCurrentLayer());
 	}
 	else {
@@ -872,12 +846,8 @@ function launch(mode){
 	}
 	
 	setDefaultLanguageIfEmpty();
-	if (!memory.archive && memory.fileLayers.length == 1){
-		//if (!confirm(getLanguagePhrase(
-		//'LoseDefaultLayerConfirm'))) return;
-		memory.fileLayers = [];
-	}
-
+	removeMemoryDefaultLayerIfPresent();
+	
 	resetView();
 	
 	let template = newTemplate(mode);
