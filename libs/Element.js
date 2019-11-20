@@ -4,23 +4,25 @@ other places keeps its respective licenses.
 All original code is unlicensed (more info
 https://unlicense.org ) */
 
+//uses Document
 const MAGIC_NUMBER = 64; // should be large
+const DISABLED_ATTRIBUTE = 'disabled'
 
 function disableElementIfPresent(element, flag){
 	if (!element) return;
 	if (flag)
-		element.setAttribute('disabled', true);
+		element.setAttribute(DISABLED_ATTRIBUTE, true);
 	else
-		element.removeAttribute('disabled');
+		element.removeAttribute(DISABLED_ATTRIBUTE);
 }
 
 function newCommentElement(x, y, text, commentOverlay){
-	let com = newElement('div');
+	let com = newDocumentElement('div');
 	com.style.zIndex = MAGIC_NUMBER;
 	com.classList.add('commentDiv');
 	com.style.left = x + 'px';
 	com.style.top = y + 'px';
-	com.appendChild(document.createTextNode(text));
+	com.appendChild(createDocumentText(text));
 	com.style.visibility = 'hidden';
 	commentOverlay.addEventListener('mouseover', () => {
 		com.style.visibility = 'visible';

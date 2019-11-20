@@ -4,6 +4,7 @@ other places keeps its respective licenses.
 All original code is unlicensed (more info
 https://unlicense.org ) */
 
+//uses Document
 const langs = [
 	{	
 		id: 'ru',
@@ -63,15 +64,20 @@ const langs = [
 
 let currentLanguage = '';
 
-function setPageLanguage(){
+function setCurrentLanguage(){
 	langs.forEach((lang, i, a) => {
 		if (lang.id == currentLanguage)
 			for (let key in lang){
-				let el = getElement(key);
+				let el = getDocumentElement(key);
 				if (el)
 					el.textContent = lang[key];
 			}
 	});
+}
+
+function setLanguage(language){
+	currentLanguage = language;
+	setCurrentLanguage();
 }
 
 function getLanguagePhrase(phrase){
@@ -85,7 +91,7 @@ function getLanguagePhrase(phrase){
 
 function addLangOptionsToSelect(select){
 	langs.forEach((lang, i, a) => {
-		let option = newElement('option');
+		let option = newDocumentElement('option');
 		option.text = lang.id;
 		select.add(option);
 	});

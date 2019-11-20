@@ -4,6 +4,7 @@ other places keeps its respective licenses.
 All original code is unlicensed (more info
 https://unlicense.org ) */
 
+//uses Document
 const templates = {
 	viewerHTML: 
 		`<div>
@@ -22,7 +23,7 @@ const templates = {
 					<input type="file" id="fileInput">
 					<button type="button" 
 						id="loadButton" 
-						onclick="triggerFileInput()">
+						onclick="triggerPageFileInput()">
 					</button>
 					<button type="button" 
 						id="saveArchiveButton" 
@@ -71,7 +72,7 @@ const templates = {
 					<input type="file" id="fileInput">
 					<button type="button" 
 						id="loadButton" 
-						onclick="triggerFileInput()">
+						onclick="triggerPageFileInput()">
 					</button>
 					<button type="button" 
 						id="clearArchiveButton" 
@@ -151,7 +152,7 @@ const templates = {
 }
 
 function newTemplate(mode){	
-	let template = newElement('template');
+	let template = newDocumentElement('template');
 	switch(mode){
 		case 'viewer':
 			template.innerHTML = templates.viewerHTML;

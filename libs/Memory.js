@@ -185,7 +185,7 @@ function setMemoryLayerName(i, name){
 }
 
 function getMemoryCurrentLayerName(){
-	getMemoryLayerName(memory.currentLayer);
+	return getMemoryLayerName(memory.currentLayer);
 }
 
 function getMemoryCurrentComments(){
@@ -193,14 +193,29 @@ function getMemoryCurrentComments(){
 }
 
 /* Searches comment pair by overlay Div on current layer */
-function getMemoryComOverPair(comOver){
+function getComOver(overlay, del){
+	if (overlay === null)
+		return null;
 	let comments = getMemoryCurrentComments();
 	if (comments === null)
 		return null;
 	for(let i = comments.length - 1; i >= 0; i--)
-		if (comments[i].commentOverlayDiv === comOver)
-			return comments[i];
+		if (comments[i].commentOverlayDiv === overlay){
+			let ret = comments[i];
+			if (del)
+				comments.splice(i, 1);
+			return ret;
+		}
 	return null;
+}
+
+//should return null if overlay equals null
+function getMemoryComOverPair(overlay){
+	return getComOver(overlay, false);
+}
+
+function removeMemoryCommentPair(overlay){
+	return getComOver(overlay, true);
 }
 
 function RewriteMemoryCommentFile(i, body){
@@ -229,6 +244,7 @@ function RewriteMemoryCommentFile(i, body){
 	}
 	memory.filenames.comments[i] = filename;
 	memory.archive.file(filename, body);
+	return true;
 }
 
 function TruncateMemoryCommentFilesList(i){
