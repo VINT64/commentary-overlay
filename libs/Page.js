@@ -19,6 +19,9 @@ const page = { imageDiv: null,
 
 const SELECTED_CLASS = 'selected'
 const IMAGE_ID = 'img';
+const imageReader = new FileReader();
+
+imageReader.onload = displayImage;
 
 function clearPage(){
 	for (let key in page ) {
@@ -73,8 +76,7 @@ function getPageSelectedComment(){
 
 function selectPageComment(comment, text){
 	comment.classList.add(SELECTED_CLASS);
-	if (text)
-		page.commentInput.value = text;
+	page.commentInput.value = text ? text : '';
 	disableElementIfPresent(page.removeCommentButton,
 		false);
 	disableElementIfPresent(page.commentInput, false);
@@ -179,7 +181,7 @@ function addPageLayer(name){
 function removePageLayer(index){
 	if (!page.layerSelect)
 		return;
-	page.layerSelect.remove(layerIndex);
+	page.layerSelect.remove(index);
 }
 
 function getPageLayerIndex(){
@@ -194,7 +196,7 @@ function setPageLayerName(index, name){
 	page.layerSelect.options[index].text = name;	
 }
 
-function managePageImage(event){
+function displayImage(event){
 	
 	function lockSize(w, h){
 		if (isPageInEditorMode()){
@@ -250,12 +252,12 @@ function initPageImagePadding(){
 
 function getPageCommentInput(){
 	if (!page.commentInput) return '';
-	return page.commentInput(value);
+	return page.commentInput.value;
 }
 
 function getPageLayerInput(){
 	if (!page.layerInput) return '';
-	return page.layerInput(value);
+	return page.layerInput.value;
 }
 
 function initPageCommentInput(keydownFun, inputFun){
@@ -340,4 +342,8 @@ function initPageFileInput(onchangeFun){
 function fillPageLanguageSelect(fillingFun){
 	if (!page.languageSelect) return;
 	fillingFun(page.languageSelect);
+}
+
+function managePageImage(blob){
+	imageReader.readAsDataURL(blob);
 }

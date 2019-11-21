@@ -6,17 +6,9 @@ https://unlicense.org ) */
 
 const DEFAULT_LAYER_NAME = 'default';
 const DEFAULT_IMAGE_NAME = 'default';
-const COMMENT_VERTICAL_OFFSET = 5;
+const jsonReader = new FileReader();
 
-const reader = {
-	image: new FileReader(),
-	json: new FileReader(),
-	singleImage: new FileReader()
-};
-
-reader.image.onload = managePageImage;
-
-reader.json.onload = manageLoadedJson;
+jsonReader.onload = manageLoadedJson;
 
 window.addEventListener('keydown', (e) => {
 	switch(e.keyCode){
@@ -81,12 +73,8 @@ function goRight(){
 
 function selectFile(i){ 
 	
-	function useImageReader(blob){
-		reader.image.readAsDataURL(blob);
-	}
-	
 	function useJSONReader(blob){
-		reader.json.readAsText(blob);
+		jsonReader.readAsText(blob);
 	}
 	
 	let imageListLength = getMemoryImageListLength()
@@ -112,7 +100,7 @@ function selectFile(i){
 
 	let archive = getMemoryArchive();
 	archive.file(currentImage)
-		.async('blob').then(useImageReader,
+		.async('blob').then(managePageImage,
 		logError
 		);	
 	
@@ -136,40 +124,16 @@ function selectFileAndLayer(f, l){
 	selectFile(f);
 }
 
-function layersToJson(){
+function currentFileLayersListToData(){
 	
-	function commentsToJson(comments){
-		let coms = [];
-		for(let i = comments.length - 1; i >= 0; i--){
-			let com = comments[i];
-			if (!com.commentOverlayDiv || !com.commentDiv)
-				continue;
-			let ov = com.commentOverlayDiv;
-			let x = parseInt(ov.style.left);
-			let y = parseInt(ov.style.top);
-			let w = parseInt(ov.style.width);
-			let h = parseInt(ov.style.height);
-			coms.push({x1: x, y1: y, x2: x + w, y2: y + h,
-				text: com.commentDiv.textContent});
-		}
-		return coms;
+	let layersList = getMemoryLayersList();
+	if (!Array.isArray(layersList)){
+		console.log('currentFileLayersListToData panic, ' +
+			'not an array: ' + i);
+			return [];
 	}
 	
-	let layers = [];
-	let length = getMemoryLayersListLength();
-	for (let i = 0; i < length; i++){
-		let l = getMemoryLayer(i);
-		if (l === null){
-			console.log('layersToJson panic, ' +
-			'layer corruption at ' + i);
-			layers.push({layer_name: '', comments: []});
-			continue;
-		}
-		let coms = commentsToJson(l.comments);
-		layers.push({layer_name: l.name,
-			comments: coms});
-	}
-	return layers;
+	return convertLayersListToData(layersList);
 }
 
 function saveCurrentFileToArchive(){
@@ -179,7 +143,7 @@ function saveCurrentFileToArchive(){
 		let archive = getMemoryArchive();
 		f.onload = (e) => {
 			file = JSON.parse(event.target.result);
-			file.layers = layersToJson();
+			file.layers = currentFileLayersListToData();
 			archive.file(filename, JSON.stringify(file));
 			resolve();
 		};
@@ -199,9 +163,8 @@ function saveAndSelectFileAndLayer(index, layer){
 }
 
 function clearCanvas(){
-	if (!isPageInEditorMode())
-		return;
-	if (!confirm(getLanguagePhrase(
+	if (!isPageInEditorMode() ||
+		!confirm(getLanguagePhrase(
 		'removeAllCommentsConfirm'))) return;
 	clearPageFromAllComments();
 }
@@ -251,6 +214,10 @@ function addLayer(name, comments){
 	addPageLayer(name);
 }
 
+function addEmptyLayer(){
+	addLayer(DEFAULT_LAYER_NAME, []);
+}
+
 function removeCurrentLayer(){
 	let layersNumber = getMemoryLayersListLength();
 	if (layersNumber == 1){
@@ -291,36 +258,30 @@ function addSelectCommentListener(el){
 function manageLoadedJson(event){
 	
 	function addComment(jsonComment, list){
-		let commentOverlay = newDocumentElement('div');
-		commentOverlay.classList.add('commentOverlayDiv');
-		commentOverlay.style.left = jsonComment.x1 + 'px';
-		commentOverlay.style.top = jsonComment.y1 + 'px';
-		commentOverlay.style.width = (jsonComment.x2 -
-			jsonComment.x1) + 'px';
-		commentOverlay.style.height = (jsonComment.y2 -
-			jsonComment.y1) + 'px';
-		if (isPageInEditorMode()){
-			commentOverlay.classList
-				.add('canvasOverlayDiv');
-			addSelectCommentListener(commentOverlay);
-		}
-		let comment = newCommentElement(jsonComment.x1,
-			jsonComment.y2 + COMMENT_VERTICAL_OFFSET,
-			jsonComment.text, commentOverlay);
-		let container = newMemoryCommentContainer(comment,
-			commentOverlay);
-		list.push(container);
+		let comOver = convertJsonToNewComOver(jsonComment,
+			(overlay) => {
+				overlay.classList.add('commentOverlayDiv');
+				if (isPageInEditorMode()){
+					overlay.classList
+						.add('canvasOverlayDiv');
+					addSelectCommentListener(
+						overlay);
+				} 
+			}
+		);
+		list.push(comOver);
 	}
 	
 	removeFileLayers();
 	
 	let json = JSON.parse(event.target.result);
-	json.layers.forEach((jsonLayer, i, a) => {
+	getJsonLayers(json).forEach((jsonLayer, i, a) => {
 		let comments = [];
-		jsonLayer.comments.forEach((json, j, ar) => {
+		getJsonLayerComments(jsonLayer).forEach(
+			(json, j, ar) => {
 			addComment(json, comments);
 		});
-		addLayer(jsonLayer.layer_name, comments);
+		addLayer(getJsonLayerName(jsonLayer), comments);
 	});
 	selectLayer(getMemoryNextLayer());
 	setMemoryNextLayer(0);
@@ -372,9 +333,10 @@ function loadArchive(){
 	if (isRegexpImageMime(f.type)){
 		//image case
 		clean();		
-		
 		archive = initMemoryForSingleImage(f.name);
-		singleImage.onload = (e) => {
+		let singleImageReader = new FileReader();
+		singleImageReader.onload = (e) => {
+			console.log('Hi');
 			archive.file(
 				imageName,
 				e.target.result,
@@ -382,7 +344,7 @@ function loadArchive(){
 				finishLoading()
 					.then(() => selectFileAndLayer(0, 0));
 		}
-		reader.singleImage.readAsBinaryString(f);
+		singleImageReader.readAsBinaryString(f);
 		return;
 	}
 		
@@ -450,7 +412,7 @@ function saveCurrentJson(){
 	if (getMemoryImageListLength() > 0)
 		imageName = getMemoryImageNameNoPath(
 			getMemoryCurrentFile());
-	let layers = layersToJson();
+	let layers = currentFileLayersListToData();
 	let body = newJsonCommentAsString(1, imageName,
 		page.widthInput.value, page.heightInput.value,
 		layers);
@@ -527,7 +489,8 @@ function initCanvas() {
 			COMMENT_VERTICAL_OFFSET, '', el);
 		addPageCanvasElement(com);
 		addSelectCommentListener(el);
-		let container = newMemoryCommentContainer(com, el);
+		let container = {commentDiv: com, 
+			commentOverlayDiv: el};
 		let comments = getMemoryCurrentComments();
 		comments.push(container);
 	}

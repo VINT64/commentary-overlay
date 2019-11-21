@@ -34,11 +34,6 @@ function clearMemory(){
 	memory.nextLayer = 0;
 }
 
-function newMemoryCommentContainer(comment, commentOverlay){
-	return {commentDiv: comment, 
-		commentOverlayDiv: commentOverlay};
-}
-
 function addMemoryLayerToCurrentFile(name, comments){
 		
 	function newLayer(name, list){
@@ -137,6 +132,10 @@ function getMemoryCurrentCommentFileName(){
 
 function getMemoryLayersListLength(){
 	return memory.fileLayers.length;
+}
+
+function getMemoryLayersList(){
+	return memory.fileLayers;
 }
 
 function getMemoryImageListLength(){
