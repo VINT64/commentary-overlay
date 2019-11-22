@@ -124,16 +124,16 @@ function selectFileAndLayer(f, l){
 	selectFile(f);
 }
 
-function currentFileLayersListToData(){
+function currentFileLayersListToWrite(){
 	
 	let layersList = getMemoryLayersList();
 	if (!Array.isArray(layersList)){
-		console.log('currentFileLayersListToData panic, ' +
+		console.log('currentFileLayersListToWrite panic, ' +
 			'not an array: ' + i);
 			return [];
 	}
 	
-	return convertLayersListToData(layersList);
+	return convertLayersListToJsonData(layersList);
 }
 
 function saveCurrentFileToArchive(){
@@ -143,7 +143,7 @@ function saveCurrentFileToArchive(){
 		let archive = getMemoryArchive();
 		f.onload = (e) => {
 			file = JSON.parse(event.target.result);
-			file.layers = currentFileLayersListToData();
+			file.layers = currentFileLayersListToWrite();
 			archive.file(filename, JSON.stringify(file));
 			resolve();
 		};
@@ -287,33 +287,47 @@ function manageLoadedJson(event){
 	setMemoryNextLayer(0);
 }
 
-function newJsonCommentAsString(version, imageName,
-	imageWidth, imageHeight, layers){
-	return JSON.stringify({version: version, 
-		image_name: imageName,
-		image_width: imageWidth,
-		image_height: imageHeight,
-		layers: layers
-	});
-}
-
-async function addDefaultJsonToArchive(index){
-	let size = await getImageSize(index);
-	let imageName = getMemoryImageNameNoPath(index);
-	let defaultLayer = {layer_name: DEFAULT_LAYER_NAME,
-		comments: []};
-	let body = newJsonCommentAsString(1, imageName,
-		size.w, size.h, [defaultLayer]);
-	
-	RewriteMemoryCommentFile(index, body);
-}
-
 function loadArchive(){
 	
 	function clean(){ 
 		clearPageImage();
 		clearPageFromAllComments();
 		removeFileLayers();
+	}
+	
+	function getImageSize(index){
+		return new Promise((resolve, reject) => {
+			let image = newDocumentElement('img');
+			let f = new FileReader();
+			f.onerror = reject;
+			f.onload = (e) => {
+				image.onerror = reject;
+				image.onload = () => 
+					resolve({w: image.naturalWidth,
+						h: image.naturalHeight});
+				image.src = e.target.result;
+			}
+			let imageName = getMemoryImageNameWithPath(index);
+			if (imageName === null){
+				reject('Image name not retrieved');
+			}
+			let archive = getMemoryArchive();
+			archive.file(imageName).async('blob')
+				.then((blob) => {
+					f.readAsDataURL(blob);
+				});
+		});
+	}
+	
+	async function addDefaultJsonFileToArchive(index){
+		let size = await getImageSize(index);
+		let imageName = getMemoryImageNameNoPath(index);
+		let defaultLayer = newJsonLayer(DEFAULT_LAYER_NAME,
+			[]);
+		let body = JSON.stringify(newJsonFile(1, imageName,
+			size.w, size.h, [defaultLayer]));
+		
+		RewriteMemoryCommentFile(index, body);
 	}
 	
 	async function finishLoading(){
@@ -323,7 +337,7 @@ function loadArchive(){
 			TruncateMemoryCommentFilesList(imagesNum);
 		if (imagesNum >	commentsNum) {
 			for (let i = commentsNum; i < imagesNum; i++)
-				await addDefaultJsonToArchive(i);
+				await addDefaultJsonFileToArchive(i);
 		}
 		disablePageArchiveButtons(false);
 	}
@@ -380,48 +394,24 @@ function loadArchive(){
 	});
 }
 
-function getImageSize(index){
-	return new Promise((resolve, reject) => {
-		let image = newDocumentElement('img');
-		let f = new FileReader();
-		f.onerror = reject;
-		f.onload = (e) => {
-			image.onerror = reject;
-			image.onload = () => 
-				resolve({w: image.naturalWidth,
-					h: image.naturalHeight});
-			image.src = e.target.result;
-		}
-		let imageName = getMemoryImageNameWithPath(index);
-		if (imageName === null){
-			reject('Image name not retrieved');
-		}
-		let archive = getMemoryArchive();
-		archive.file(imageName).async('blob')
-			.then((blob) => {
-				f.readAsDataURL(blob);
-			});
-	});
-}
-
 function saveCurrentJson(){
-	//untie from inputs?
-	if (!page.widthInput ||	!page.heightInput) return;
-	
+	let canvas = getPageCanvas();
+	if (!canvas) return;
+	console.log('x: ' + canvas.clientWidth + "y: " + canvas.clientHeight);
 	let imageName = DEFAULT_IMAGE_NAME;
 	if (getMemoryImageListLength() > 0)
 		imageName = getMemoryImageNameNoPath(
 			getMemoryCurrentFile());
-	let layers = currentFileLayersListToData();
-	let body = newJsonCommentAsString(1, imageName,
-		page.widthInput.value, page.heightInput.value,
-		layers);
+	let layers = currentFileLayersListToWrite();
+	let body = JSON.stringify(newJsonFile(1, imageName,
+		canvas.clientWidth, canvas.clientHeight,
+		layers));
 	let blob = new Blob([body],	
 		{type: 'application/json'});
 	let ext = getRegexpExtension(imageName);
-	let jsonName = (ext === undefined) ? imageName :
+	let fileName = (ext === undefined) ? imageName :
 		imageName.replace(ext, 'json');
-	saveAs(blob, jsonName);
+	saveAs(blob, fileName);
 }
 
 function saveArchive(){

@@ -11,9 +11,9 @@ https://unlicense.org ) */
 const COMMENT_VERTICAL_OFFSET = 5;
 const COMMENT_HORIZONTAL_OFFSET = 0;
 
-function convertLayersListToData(layers){
+function convertLayersListToJsonData(layers){
 	
-	function convertCommentsListToData(comments){
+	function convertCommentsListToJsonData(comments){
 		let coms = [];
 		for(let i = comments.length - 1; i >= 0; i--){
 			let com = comments[i];
@@ -24,8 +24,8 @@ function convertLayersListToData(layers){
 			let y = parseInt(ov.style.top);
 			let w = parseInt(ov.style.width);
 			let h = parseInt(ov.style.height);
-			coms.push({x1: x, y1: y, x2: x + w, y2: y + h,
-				text: com.commentDiv.textContent});
+			coms.push(newJsonComment(x, y, x + w, y + h,
+				com.commentDiv.textContent));
 		}
 		return coms;
 	}
@@ -33,10 +33,9 @@ function convertLayersListToData(layers){
 	let ret = [];
 	let l = layers.length;
 	for (let i = 0; i < l; i++){
-		let coms = convertCommentsListToData(
+		let coms = convertCommentsListToJsonData(
 			layers[i].comments);
-		ret.push({layer_name: layers[i].name,
-			comments: coms});
+		ret.push(newJsonLayer(layers[i].name, coms));
 	}
 	return ret;
 }
@@ -53,14 +52,9 @@ function convertJsonToNewComOver(jsonComment, overlayFun){
 		jsonComment.x1 + COMMENT_HORIZONTAL_OFFSET,
 		jsonComment.y2 + COMMENT_VERTICAL_OFFSET,
 		jsonComment.text, commentOverlay);
-		overlayFun(commentOverlay);
+	overlayFun(commentOverlay);
 	return {commentDiv: comment, 
 		commentOverlayDiv: commentOverlay};
-}
-
-function convertJsonToLayerNameAndListPair(
-	json, overlayFun){
-	
 }
 
 function getJsonLayers(json){
@@ -73,4 +67,24 @@ function getJsonLayerName(json){
 
 function getJsonLayerComments(json){
 	return json.comments;
+}
+
+function newJsonFile(version, imageName,
+	imageWidth, imageHeight, layers){
+	return {version: version, 
+		image_name: imageName,
+		image_width: imageWidth,
+		image_height: imageHeight,
+		layers: layers
+	};
+}
+
+function newJsonLayer(name, commentList){
+	return {layer_name: DEFAULT_LAYER_NAME,
+		comments: []}
+}
+
+function newJsonComment(x1, y1, x2, y2, text){
+	return {x1: x1, y1: y1, x2: x2, y2: y2,
+		text: text};
 }
