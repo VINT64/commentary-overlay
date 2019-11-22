@@ -156,6 +156,7 @@ function clearPageArchive(){
 	clearPageImage();
 	fillPageFileInfo('');
 	disablePageArchiveButtons(true);
+	clearPageFileInput();
 }
 
 function clearPageLayersSelect(){
@@ -228,6 +229,11 @@ function displayImage(event){
 function getPageFileInput(){
 	if (!page.fileInput) return null;
 	return page.fileInput.files[0];
+}
+
+function clearPageFileInput(){
+	if (!page.fileInput) return null;
+	page.fileInput.value = '';
 }
 
 function getPageCanvas(){
