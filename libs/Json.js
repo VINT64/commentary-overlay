@@ -24,7 +24,7 @@ function convertLayersListToJsonData(layers){
 			let y = parseInt(ov.style.top);
 			let w = parseInt(ov.style.width);
 			let h = parseInt(ov.style.height);
-			coms.push(newJsonComment(x, y, x + w, y + h,
+			coms.push(new JsonComment(x, y, x + w, y + h,
 				com.commentDiv.textContent));
 		}
 		return coms;
@@ -35,7 +35,7 @@ function convertLayersListToJsonData(layers){
 	for (let i = 0; i < l; i++){
 		let coms = convertCommentsListToJsonData(
 			layers[i].comments);
-		ret.push(newJsonLayer(layers[i].name, coms));
+		ret.push(new JsonLayer(layers[i].name, coms));
 	}
 	return ret;
 }
@@ -69,22 +69,24 @@ function getJsonLayerComments(json){
 	return json.comments;
 }
 
-function newJsonFile(version, imageName,
+function JsonFile(version, imageName,
 	imageWidth, imageHeight, layers){
-	return {version: version, 
-		image_name: imageName,
-		image_width: imageWidth,
-		image_height: imageHeight,
-		layers: layers
-	};
+		this.version = version; 
+		this.image_name = imageName;
+		this.image_width = imageWidth;
+		this.image_height = imageHeight;
+		this.layers = layers;
 }
 
-function newJsonLayer(name, commentList){
-	return {layer_name: DEFAULT_LAYER_NAME,
-		comments: []}
+function JsonLayer(name, commentList){
+	this.layer_name = name;
+	this.comments = commentList;
 }
 
-function newJsonComment(x1, y1, x2, y2, text){
-	return {x1: x1, y1: y1, x2: x2, y2: y2,
-		text: text};
+function JsonComment(x1, y1, x2, y2, text){
+	this.x1 = x1;
+	this.y1 = y1;
+	this.x2 = x2;
+	this.y2 = y2;
+	this.text = text;
 }

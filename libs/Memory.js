@@ -12,6 +12,11 @@ const memory = { archive: null,
 	nextLayer: 0,
 };
 
+function Layer(name, list){
+	this.name = name;
+	this.comments = list;
+}
+
 function clearMemoryArchive(){
 	memory.archive = null;
 	memory.filenames.images = [];
@@ -35,12 +40,7 @@ function clearMemory(){
 }
 
 function addMemoryLayerToCurrentFile(name, comments){
-		
-	function newLayer(name, list){
-		return {name: name, comments: list};
-	}
-
-	memory.fileLayers.push(newLayer(name, comments));
+	memory.fileLayers.push(new Layer(name, comments));
 }
 
 function removeMemoryLayerFromCurrentFile(i){
