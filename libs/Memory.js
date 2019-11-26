@@ -7,20 +7,54 @@ https://unlicense.org ) */
 //uses Regexp
 const DEFAULT_ROOT_FOLDER_NAME = 'root';
 const memory = { archive: null,
-	filenames: {images: [], comments: []},
+	filenames: new Filenames([], []),
 	fileLayers: [],	currentFile: 0, currentLayer: 0,
 	nextLayer: 0,
 };
 
 function Layer(name, list){
 	this.name = name;
-	this.comments = list;
+	this.comovers = list;
+	this.getName = function(){return this.name};
+	this.getComOversList = function(){
+		return this.comovers;
+	};
+}
+
+function ComOver(com, over){
+	this.commentDiv = com;
+	this.commentOverlayDiv = over;
+	this.getComment = function(){return this.commentDiv;};
+	this.getOverlay = function(){
+		return this.commentOverlayDiv;
+	};
+	this.notComplete = function(){
+		return !this.commentOverlayDiv || !this.commentDiv;
+	}
+	this.getText = function(){
+		if (!this.commentDiv){
+			console.log('ComOver attempt to get text ' +
+				'while comment div is absent');
+			return null;
+		}
+		return this.commentDiv.textContent;
+	};
+	this.setText = function(text){
+		if (text === null)
+			return;
+		if (!this.commentDiv){
+			console.log('ComOver attempt to set text ' +
+				'while comment div is absent');
+			return;
+		}
+		this.commentDiv.textContent = text;
+	}
 }
 
 function clearMemoryArchive(){
 	memory.archive = null;
 	memory.filenames.images = [];
-	memory.filenames.comments = [];
+	memory.filenames.jsonfiles = [];
 }
 
 function checkMemoryClear(){
@@ -39,8 +73,8 @@ function clearMemory(){
 	memory.nextLayer = 0;
 }
 
-function addMemoryLayerToCurrentFile(name, comments){
-	memory.fileLayers.push(new Layer(name, comments));
+function addMemoryLayerToCurrentFile(name, comovers){
+	memory.fileLayers.push(new Layer(name, comovers));
 }
 
 function removeMemoryLayerFromCurrentFile(i){
@@ -118,12 +152,12 @@ function getMemoryImageNameNoPath(i){
 }
 
 function getMemoryCommentFileName(i){
-	if (i < 0 || i >= memory.filenames.comments.length){
+	if (i < 0 || i >= memory.filenames.jsonfiles.length){
 		console.log(
 			'Bad param for getMemoryCommentFileName: ' + i);
 		return null;
 	}
-	return memory.filenames.comments[i];
+	return memory.filenames.jsonfiles[i];
 }
 
 function getMemoryCurrentCommentFileName(){
@@ -143,7 +177,7 @@ function getMemoryImageListLength(){
 }
 
 function getMemoryCommentFileListLength(){
-	return memory.filenames.comments.length;
+	return memory.filenames.jsonfiles.length;
 }
 
 function getMemoryLayer(i){
@@ -155,13 +189,13 @@ function getMemoryLayer(i){
 	return memory.fileLayers[i];
 }
 
-function getMemoryCommentsFromLayer(i){
+function getMemoryComOversFromLayer(i){
 	if (i < 0 || i >= memory.fileLayers.length){
 		console.log(
 			'Bad param for getMemoryCommentLayer: ' + i);
 		return null;
 	}
-	return memory.fileLayers[i].comments;
+	return memory.fileLayers[i].comovers;
 }
 
 function getMemoryLayerName(i){
@@ -187,33 +221,33 @@ function getMemoryCurrentLayerName(){
 	return getMemoryLayerName(memory.currentLayer);
 }
 
-function getMemoryCurrentComments(){
-	return getMemoryCommentsFromLayer(memory.currentLayer);
+function getMemoryCurrentComOvers(){
+	return getMemoryComOversFromLayer(memory.currentLayer);
 }
 
-/* Searches comment pair by overlay Div on current layer */
+/* Searches comOver by overlay div on current layer */
 function getComOver(overlay, del){
 	if (overlay === null)
 		return null;
-	let comments = getMemoryCurrentComments();
-	if (comments === null)
+	let comovers = getMemoryCurrentComOvers();
+	if (comovers === null)
 		return null;
-	for(let i = comments.length - 1; i >= 0; i--)
-		if (comments[i].commentOverlayDiv === overlay){
-			let ret = comments[i];
+	for(let i = comovers.length - 1; i >= 0; i--)
+		if (comovers[i].commentOverlayDiv === overlay){
+			let ret = comovers[i];
 			if (del)
-				comments.splice(i, 1);
+				comovers.splice(i, 1);
 			return ret;
 		}
 	return null;
 }
 
 //should return null if overlay equals null
-function getMemoryComOverPair(overlay){
+function getMemoryComOver(overlay){
 	return getComOver(overlay, false);
 }
 
-function removeMemoryCommentPair(overlay){
+function removeMemoryComOver(overlay){
 	return getComOver(overlay, true);
 }
 
@@ -233,7 +267,7 @@ function RewriteMemoryCommentFile(i, body){
 			'Bad param for RewriteMemoryCommentFile: ' + i);
 		return false;
 	}
-	let filename = memory.filenames.comments[i];
+	let filename = memory.filenames.jsonfiles[i];
 	if (filename === undefined || filename === null)
 		filename = generateMemoryCommentFileName(i);
 	if (filename === null){
@@ -241,20 +275,20 @@ function RewriteMemoryCommentFile(i, body){
 			'image name is null. Index in question: ' + i);
 		return false;
 	}
-	memory.filenames.comments[i] = filename;
+	memory.filenames.jsonfiles[i] = filename;
 	memory.archive.file(filename, body);
 	return true;
 }
 
 function TruncateMemoryCommentFilesList(i){
-	if (i >= 0 && i < memory.filenames.comments.length){
+	if (i >= 0 && i < memory.filenames.jsonfiles.length){
 		if (i < memory.filenames.images.length)
 			console.log('Warning, ' +
 				'TruncateCommentFilesList may cut out ' +
 				'too much. Images: ' +
 				memory.filenames.images.length + 
-				', comments: ' + i);
-		memory.filenames.comments.length = i;
+				', json Files: ' + i);
+		memory.filenames.jsonfiles.length = i;
 	}
 }
 
@@ -262,31 +296,36 @@ function initMemoryForSingleImage(filename){
 	memory.archive = new JSZip();
 	imageName = DEFAULT_ROOT_FOLDER_NAME + '/'
 		+ filename;
-	memory.filenames = {images: [imageName],
-		comments: []};
+	memory.filenames = new Filenames([imageName],
+		[]);
 	return memory.archive;
 }
 
 function initMemoryForArchive(archive, imagesList,
 	commentFilesList){
-	memory.filenames = {images: imagesList,
-		comments: commentFilesList};
+	memory.filenames = new Filenames(imagesList,
+		commentFilesList);
 	memory.archive = archive; 
 }
 
 function dumpMemoryFiles(){
 	for (let i = 0; i < memory.filenames.images.length; i++)
 		console.log(memory.filenames.images[i]);
-	for (let i = 0; i < memory.filenames.comments.length;
+	for (let i = 0; i < memory.filenames.jsonfiles.length;
 		i++)
-		console.log(memory.filenames.comments[i]);
+		console.log(memory.filenames.jsonfiles[i]);
 }
 
 function removeMemoryDefaultLayerIfPresent(){
-	//if (!confirm(getLanguagePhrase(
+	//if (!confirm(Language.getPhrase(
 		//'LoseDefaultLayerConfirm'))) return;
 	if (!memory.archive && memory.fileLayers.length == 1){
 		memory.fileLayers = [];
 	}
 
+}
+
+function Filenames(imageslist, commentFilesList){
+	this.images = imageslist;
+	this.jsonfiles = commentFilesList;
 }

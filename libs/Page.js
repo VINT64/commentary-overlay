@@ -17,6 +17,9 @@ const page = { imageDiv: null,
 	languageSelect: null
 };
 
+const COMMENT_VERTICAL_OFFSET = 5;
+const COMMENT_HORIZONTAL_OFFSET = 0;
+
 const SELECTED_CLASS = 'selected'
 const IMAGE_ID = 'img';
 const imageReader = new FileReader();
@@ -42,20 +45,26 @@ function deselectPageComment(){
 		page.selectedComment.classList.remove(SELECTED_CLASS);
 	}
 	page.selectedComment = null;
-	disableElementIfPresent(page.commentInput, true);
-	disableElementIfPresent(page.removeCommentButton, true);
+	Element.disable(page.commentInput, true);
+	Element.disable(page.removeCommentButton, true);
 }
 
-function removePageCommentPair(comment, overlay){
-	if (!isPageInEditorMode())
+function removePageComOver(comOver){
+	if (!isPageInEditorMode() || !comOver)
 		return;
+	let comment = comOver.getComment();
+	let overlay = comOver.getOverlay();
 	if (comment)
 		page.canvasDiv.removeChild(comment);
 	if (overlay)
 		page.canvasDiv.removeChild(overlay);	
 }
 
-function addPageCommentPair(comment, overlay){
+function addPageComOver(comOver){
+	if(!comOver)
+		return;
+	let comment = comOver.getComment();
+	let overlay = comOver.getOverlay();
 	if (isPageInViewerMode()){
 		if (comment)
 			page.allCommentsDiv.appendChild(comment);
@@ -77,9 +86,9 @@ function getPageSelectedComment(){
 function selectPageComment(comment, text){
 	comment.classList.add(SELECTED_CLASS);
 	page.commentInput.value = text ? text : '';
-	disableElementIfPresent(page.removeCommentButton,
+	Element.disable(page.removeCommentButton,
 		false);
-	disableElementIfPresent(page.commentInput, false);
+	Element.disable(page.commentInput, false);
 	if (page.commentInput){
 		page.commentInput.focus();
 	}
@@ -130,8 +139,8 @@ function clearPageFromAllComments(){
 function clearPageImage(){
 	
 	function unlock_size(){
-		disableElementIfPresent(page.widthInput, false);
-		disableElementIfPresent(page.heightInput, false);
+		Element.disable(page.widthInput, false);
+		Element.disable(page.heightInput, false);
 		page.imageDiv.style.width =
 			page.widthInput.value + 'px';
 		page.imageDiv.style.height =
@@ -139,7 +148,7 @@ function clearPageImage(){
 	}
 	
 	if (!page.imageDiv) return;
-	let d = getDocumentElement(IMAGE_ID);
+	let d = Document.getElement(IMAGE_ID);
 	if (d)
 		page.imageDiv.removeChild(d); 
 	if (page.widthInput && page.heightInput){
@@ -148,8 +157,8 @@ function clearPageImage(){
 }
 
 function disablePageArchiveButtons(b){
-	disableElementIfPresent(page.saveArchiveButton, b);
-	disableElementIfPresent(page.clearArchiveButton, b);
+	Element.disable(page.saveArchiveButton, b);
+	Element.disable(page.clearArchiveButton, b);
 }
 
 function clearPageArchive(){
@@ -173,7 +182,7 @@ function getPageLanguage(){
 
 function addPageLayer(name){
 	if (page.layerSelect){
-		let option = newDocumentElement('option');
+		let option = Document.newElement('option');
 		option.text = name;
 		page.layerSelect.add(option);
 	}
@@ -207,17 +216,17 @@ function displayImage(event){
 		if (page.widthInput){
 			page.widthInput.value = w;
 			page.imageDiv.style.width = null; //TODO ?
-			disableElementIfPresent(page.widthInput, true);
+			Element.disable(page.widthInput, true);
 		}
 		if (page.heightInput){
 			page.heightInput.value = h;
 			page.imageDiv.style.height = null; //TODO ?
-			disableElementIfPresent(page.heightInput, true);
+			Element.disable(page.heightInput, true);
 		}
 	}
 
 	clearPageImage();
-	let image = newDocumentElement('img');
+	let image = Document.newElement('img');
 	image.id = IMAGE_ID;
 	image.src = event.target.result;
 	page.imageDiv.appendChild(image);
@@ -270,11 +279,11 @@ function initPageCommentInput(keydownFun, inputFun){
 	if (!page.commentInput) return;
 	page.commentInput.onkeydown = keydownFun;
 	page.commentInput.oninput = inputFun;
-	disableElementIfPresent(page.commentInput, true);
+	Element.disable(page.commentInput, true);
 }
 
 function initPageRemoveCommentButton(){
-	disableElementIfPresent(page.removeCommentButton, true);
+	Element.disable(page.removeCommentButton, true);
 }
 
 function initPageSizeInputs(){
@@ -327,7 +336,7 @@ function initPageCanvasDiv(onmousemoveFun, onmousedownFun,
 
 function initPage(){
 	for (let key in page){
-		page[key] = getDocumentElement(key);
+		page[key] = Document.getElement(key);
 	}
 }
 

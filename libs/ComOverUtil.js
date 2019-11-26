@@ -30,11 +30,8 @@ function logError(error){
 function removeComment(el){
 	if (!el) 
 		return;
-	let comment = null
-	let comOver = removeMemoryCommentPair(el);
-	if (comOver && comOver.commentDiv) 
-		comment = comOver.commentDiv;
-	removePageCommentPair(comment, el);
+	let comOver = removeMemoryComOver(el);
+	removePageComOver(comOver);
 }
 
 function removeSelectedComment(){
@@ -46,10 +43,12 @@ function selectComment(el){
 	deselectPageComment();
 	if (!el)
 		return;
-	let commentText = '';
-	let comOver = getMemoryComOverPair(el);
-	if (comOver && comOver.commentDiv)
-		commentText = comOver.commentDiv.textContent;
+	let comOver = getMemoryComOver(el);
+	if(!comOver)
+		return;
+	let commentText = comOver.getText();
+	if (commentText === null) 
+		commentText = '';
 	selectPageComment(el, commentText);
 }
 
@@ -132,8 +131,7 @@ function currentFileLayersListToWrite(){
 			'not an array: ' + i);
 			return [];
 	}
-	
-	return convertLayersListToJsonData(layersList);
+	return JsonUtil.convertLayersList(layersList);
 }
 
 function saveCurrentFileToArchive(){
@@ -164,13 +162,13 @@ function saveAndSelectFileAndLayer(index, layer){
 
 function clearCanvas(){
 	if (!isPageInEditorMode() ||
-		!confirm(getLanguagePhrase(
+		!confirm(Language.getPhrase(
 		'removeAllCommentsConfirm'))) return;
 	clearPageFromAllComments();
 }
 
 function clearArchive(){
-	if (!confirm(getLanguagePhrase(
+	if (!confirm(Language.getPhrase(
 		'removeArchiveConfirm'))) return;
 	clearMemoryArchive();
 	clearPageArchive();
@@ -197,20 +195,19 @@ function selectLayer(i){
 	deselectPageComment();
 	clearPageFromAllComments();
 	
-	let comments = getMemoryCurrentComments(); // i
-	comments.forEach((com, n, a) => {
-		addPageCommentPair(com.commentDiv,
-			com.commentOverlayDiv);
+	let comovers = getMemoryCurrentComOvers(); // i
+	comovers.forEach((comOver, n, a) => {
+		addPageComOver(comOver);
 	});
 	selectPageLayer(getMemoryCurrentLayerName(), i);
 }
 
 function updateLanguage(){
-	setLanguage(getPageLanguage());
+	Language.set(getPageLanguage());
 }
 
-function addLayer(name, comments){
-	addMemoryLayerToCurrentFile(name, comments);
+function addLayer(name, comovers){
+	addMemoryLayerToCurrentFile(name, comovers);
 	addPageLayer(name);
 }
 
@@ -221,13 +218,13 @@ function addEmptyLayer(){
 function removeCurrentLayer(){
 	let layersNumber = getMemoryLayersListLength();
 	if (layersNumber == 1){
-		alert(getLanguagePhrase('lastLayerAlert'));
+		alert(Language.getPhrase('lastLayerAlert'));
 		return;
 	}
 	let layerIndex = getPageLayerIndex();
 	if (layerIndex < 0)
 		return;
-	if (!confirm(getLanguagePhrase('removeLayerConfirm')))
+	if (!confirm(Language.getPhrase('removeLayerConfirm')))
 		return;
 	removeMemoryLayerFromCurrentFile(layerIndex);
 	removePageLayer(layerIndex);
@@ -258,7 +255,7 @@ function addSelectCommentListener(el){
 function manageLoadedJson(event){
 	
 	function addComment(jsonComment, list){
-		let comOver = convertJsonToNewComOver(jsonComment,
+		let comOver = JsonUtil.convertToComOver(jsonComment,
 			(overlay) => {
 				overlay.classList.add('commentOverlayDiv');
 				if (isPageInEditorMode()){
@@ -274,14 +271,17 @@ function manageLoadedJson(event){
 	
 	removeFileLayers();
 	
+
 	let json = JSON.parse(event.target.result);
-	getJsonLayers(json).forEach((jsonLayer, i, a) => {
-		let comments = [];
-		getJsonLayerComments(jsonLayer).forEach(
+	let layers = JsonUtil.getFileLayersList(json);
+	layers.forEach((jsonLayer, i, a) => {
+		let comovers = [];
+		JsonUtil.getLayerCommentsList(jsonLayer).forEach(
 			(json, j, ar) => {
-			addComment(json, comments);
-		});
-		addLayer(getJsonLayerName(jsonLayer), comments);
+				addComment(json, comovers);
+			}
+		);
+		addLayer(JsonUtil.getLayerName(jsonLayer), comovers);
 	});
 	selectLayer(getMemoryNextLayer());
 	setMemoryNextLayer(0);
@@ -337,17 +337,17 @@ function initCanvas() {
 			removePageCanvasElement(el);
 			return;
 		}
-		let com = newCommentElement(
-			parseInt(el.style.left),
+		let com = Element.newComment(
+			parseInt(el.style.left) + 
+			//parseInt(el.style.width) +
+			COMMENT_HORIZONTAL_OFFSET,
 			parseInt(el.style.top) + 
 			parseInt(el.style.height) +
 			COMMENT_VERTICAL_OFFSET, '', el);
 		addPageCanvasElement(com);
 		addSelectCommentListener(el);
-		let container = {commentDiv: com, 
-			commentOverlayDiv: el};
-		let comments = getMemoryCurrentComments();
-		comments.push(container);
+		let comovers = getMemoryCurrentComOvers();
+		comovers.push(new ComOver(com, el));
 	}
 	
 	function addCanvasDefaultFile(){
@@ -370,11 +370,10 @@ function initCanvas() {
 			}
 		},
 		() => {
-			let com = getMemoryComOverPair(
+			let comover = getMemoryComOver(
 				getPageSelectedComment());
-			if (!com || !com.commentDiv) return;
-			com.commentDiv.textContent = 
-				getPageCommentInput();
+			if (comover.notComplete()) return;
+			comover.setText(getPageCommentInput());
 		}
 	);	
 	
@@ -418,7 +417,7 @@ function initCanvas() {
 			
 			if (drawing !== null)
 				completeDrawing(drawing);
-			drawing = newDocumentElement('div');
+			drawing = Document.newElement('div');
 			drawing.classList.add('commentOverlayDiv',
 				'canvasOverlayDiv');
 			drawing.style.left = mouse.x + 'px';
@@ -439,8 +438,8 @@ function initMode(){
 	initPageImagePanel();
 	initCanvas();
 	initPageFileInput(loadFile);
-	fillPageLanguageSelect(addLangOptionsToSelect);
-	setCurrentLanguage();	
+	fillPageLanguageSelect(Language.addOptions);
+	Language.update();	
 	if(getMemoryArchive()){
 		saveAndSelectFileAndLayer(getMemoryCurrentFile(),
 			getMemoryCurrentLayer());
@@ -453,14 +452,14 @@ function initMode(){
 function launch(mode){
 	
 	function resetView(){
-		clearDocument();
+		Document.clear();
 		clearPage();
 		//clearMemory();
 	}
-	setDefaultLanguageIfEmpty();
+	Language.init();
 	removeMemoryDefaultLayerIfPresent();
 	resetView();
-	let template = newTemplate(mode);
+	let template = Template.get(mode);
 	if (template === null)
 		return;
 	document.body.appendChild(template.content.firstChild);

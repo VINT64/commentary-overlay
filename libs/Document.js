@@ -4,20 +4,32 @@ other places keeps its respective licenses.
 All original code is unlicensed (more info
 https://unlicense.org ) */
 
-function getDocumentElement(id){
-	return document.getElementById(id);
-}
 
-function newDocumentElement(tag){
-	return document.createElement(tag);
-}
+var Document = (function(){
 
-function clearDocument(){
-	while(document.body.firstChild){
-		document.body.removeChild(document.body.firstChild);
+	function getElement(id){
+		return document.getElementById(id);
 	}
-}
+	
+	function newElement(tag){
+		return document.createElement(tag);
+	}
+	
+	function clear(){
+		while(document.body.firstChild){
+			document.body.removeChild(
+				document.body.firstChild);
+		}
+	}
+	
+	function createText(text){
+		return document.createTextNode(text);
+	}
 
-function createDocumentText(text){
-	return document.createTextNode(text);
-}
+	return {
+		getElement: getElement,
+		newElement: newElement,
+		clear: clear,
+		createText: createText
+	}
+})();

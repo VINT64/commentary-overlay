@@ -18,7 +18,7 @@ function loadFile(){
 	
 	function getImageSize(index){
 		return new Promise((resolve, reject) => {
-			let image = newDocumentElement('img');
+			let image = Document.newElement('img');
 			let f = new FileReader();
 			f.onerror = reject;
 			f.onload = (e) => {
@@ -96,7 +96,7 @@ function loadFile(){
 				tempJsons.push(relativePath);
 		});
 		if (tempImages.length < 1){
-			alert(getLanguagePhrase('noImagesAlert'));
+			alert(Language.getPhrase('noImagesAlert'));
 			return;
 		}
 		
@@ -110,7 +110,7 @@ function loadFile(){
 			selectFileAndLayer(0, 0));
 	},
 	(e) => {
-		alert(getLanguagePhrase('notImageOrArchiveAlert'));
+		alert(Language.getPhrase('notImageOrArchiveAlert'));
 		console.log(e.message);
 	});
 }
