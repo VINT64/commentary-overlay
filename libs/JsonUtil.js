@@ -102,4 +102,4 @@ var JsonUtil = (function(){
 		getLayerName: getLayerName,
 		getLayerCommentsList: getLayerCommentsList
 	}
-})();
+}());

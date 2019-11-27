@@ -44,4 +44,4 @@ var Element = (function(){
 		disable: disable,
 		newComment: newComment
 	}
-})();
+}());

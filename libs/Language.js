@@ -114,5 +114,5 @@ var Language = (function(){
 		addOptions: addOptions,
 		init: init
 	}
-})();
+}());
 

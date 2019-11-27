@@ -146,7 +146,7 @@ function getMemoryImageNameNoPath(i){
 	if (imageFullName === null){
 		return null;
 	}
-	let path = getRegexpPath(imageFullName);
+	let path = ParseUtil.getPath(imageFullName);
 	return (path === undefined) ?
 		imageFullName : imageFullName.replace(path, '');
 }
@@ -257,7 +257,7 @@ function RewriteMemoryCommentFile(i, body){
 		let imageFullName = getMemoryImageNameWithPath(i);
 		if (imageFullName === null)
 			return null;
-		let ext = getRegexpExtension(imageFullName);
+		let ext = ParseUtil.getExtension(imageFullName);
 		return (ext === undefined) ? imageFullName :
 			imageFullName.replace(ext, 'json');
 	}

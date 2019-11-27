@@ -29,7 +29,7 @@ var Template = (function(){
 						</button>
 						<button type="button" 
 							id="saveArchiveButton" 
-							onclick="saveArchive()">
+							onclick="FileUtil.save()">
 						</button>
 					</p>
 					<p>
@@ -83,7 +83,7 @@ var Template = (function(){
 						</button>
 						<button type="button" 
 							id="saveArchiveButton" 
-							onclick="saveArchive()">
+							onclick="FileUtil.save()">
 						</button>
 					</p>
 					<p>
@@ -122,7 +122,7 @@ var Template = (function(){
 						</button>
 						<button type="button" 
 							id="saveJsonButton" 
-							onclick="saveCurrentJson()">
+							onclick="FileUtil.saveJson()">
 						</button>
 					</p>
 					<p>
@@ -173,5 +173,5 @@ var Template = (function(){
 	return {
 		get: get
 	}
-})();
+}());
 

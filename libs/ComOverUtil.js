@@ -437,7 +437,7 @@ function initMode(){
 	initPage();
 	initPageImagePanel();
 	initCanvas();
-	initPageFileInput(loadFile);
+	initPageFileInput(FileUtil.load);
 	fillPageLanguageSelect(Language.addOptions);
 	Language.update();	
 	if(getMemoryArchive()){

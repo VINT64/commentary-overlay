@@ -32,4 +32,4 @@ var Document = (function(){
 		clear: clear,
 		createText: createText
 	}
-})();
+}());

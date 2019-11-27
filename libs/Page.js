@@ -6,6 +6,10 @@ https://unlicense.org ) */
 
 
 //uses Document, Element
+
+const COMMENT_VERTICAL_OFFSET = 5;
+const COMMENT_HORIZONTAL_OFFSET = 0;
+
 const page = { imageDiv: null,
 	fileInput: null, allCommentsDiv: null,
 	layerInput: null, layerSelect: null,
@@ -16,9 +20,6 @@ const page = { imageDiv: null,
 	saveArchiveButton: null, clearArchiveButton: null,
 	languageSelect: null
 };
-
-const COMMENT_VERTICAL_OFFSET = 5;
-const COMMENT_HORIZONTAL_OFFSET = 0;
 
 const SELECTED_CLASS = 'selected'
 const IMAGE_ID = 'img';
