@@ -25,7 +25,7 @@ var Memory = (function(){
 	
 	function clearArchive(){
 		memory.archive = null;
-		filenames.clear();
+		memory.filenames.clear();
 	}
 	
 	function isClear(){
