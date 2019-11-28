@@ -13,8 +13,8 @@ var FileUtil = (function(){
 	function load(){
 	
 		function clean(){ 
-			clearPageImage();
-			clearPageFromAllComments();
+			Page.clearImage();
+			Page.clearComments();
 			removeFileLayers();
 		}
 		
@@ -62,10 +62,10 @@ var FileUtil = (function(){
 				for (let i = commentsNum; i < imagesNum; i++)
 					await addDefaultJsonFileToArchive(i);
 			}
-			disablePageArchiveButtons(false);
+			Page.disableArchiveButtons(false);
 		}
 		
-		let f = getPageFileInput();
+		let f = Page.getFile();
 		if (!f) return;
 		if (ParseUtil.isImageMime(f.type)){
 			//image case
@@ -117,7 +117,7 @@ var FileUtil = (function(){
 	}
 	
 	function saveJson(){
-		let canvas = getPageCanvas();
+		let canvas = Page.getCanvas();
 		if (!canvas) return;
 		let imageName = DEFAULT_IMAGE_NAME;
 		if (getMemoryImageListLength() > 0)

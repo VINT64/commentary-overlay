@@ -25,7 +25,7 @@ var Template = (function(){
 						<input type="file" id="fileInput">
 						<button type="button" 
 							id="loadButton" 
-							onclick="triggerPageFileInput()">
+							onclick="Page.triggerFileInput()">
 						</button>
 						<button type="button" 
 							id="saveArchiveButton" 
@@ -74,7 +74,7 @@ var Template = (function(){
 						<input type="file" id="fileInput">
 						<button type="button" 
 							id="loadButton" 
-							onclick="triggerPageFileInput()">
+							onclick="Page.triggerFileInput()">
 						</button>
 						<button type="button" 
 							id="clearArchiveButton" 

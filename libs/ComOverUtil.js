@@ -16,7 +16,7 @@ window.addEventListener('keydown', (e) => {
 		case 37: goLeft(); break;
 		case 39: goRight(); break;
 		case 46: 
-			if (isPageInEditorMode())
+			if (Page.isInEditorMode())
 				removeSelectedComment();
 			break;
 		default: break;
@@ -31,16 +31,16 @@ function removeComment(el){
 	if (!el) 
 		return;
 	let comOver = removeMemoryComOver(el);
-	removePageComOver(comOver);
+	Page.removeComOver(comOver);
 }
 
 function removeSelectedComment(){
-	removeComment(getPageSelectedComment());
-	deselectPageComment();
+	removeComment(Page.getSelectedComment());
+	Page.deselectComment();
 }
 
 function selectComment(el){
-	deselectPageComment();
+	Page.deselectComment();
 	if (!el)
 		return;
 	let comOver = getMemoryComOver(el);
@@ -49,7 +49,7 @@ function selectComment(el){
 	let commentText = comOver.getText();
 	if (commentText === null) 
 		commentText = '';
-	selectPageComment(el, commentText);
+	Page.selectComment(el, commentText);
 }
 
 function goLeft(){
@@ -94,12 +94,12 @@ function selectFile(i){
 			'current image name is null');
 		return;
 	}
-	fillPageFileInfo(currentImage +	' ' + (currentFile + 1)
+	Page.fillFileInfo(currentImage +	' ' + (currentFile + 1)
 		+ '/' + imageListLength + ' ');
 
 	let archive = getMemoryArchive();
 	archive.file(currentImage)
-		.async('blob').then(managePageImage,
+		.async('blob').then(Page.manageImage,
 		logError
 		);	
 	
@@ -161,22 +161,22 @@ function saveAndSelectFileAndLayer(index, layer){
 }
 
 function clearCanvas(){
-	if (!isPageInEditorMode() ||
+	if (!Page.isInEditorMode() ||
 		!confirm(Language.getPhrase(
 		'removeAllCommentsConfirm'))) return;
-	clearPageFromAllComments();
+	Page.clearComments();
 }
 
 function clearArchive(){
 	if (!confirm(Language.getPhrase(
 		'removeArchiveConfirm'))) return;
 	clearMemoryArchive();
-	clearPageArchive();
+	Page.clearArchive();
 }
 	
 function removeFileLayers(){
 	clearMemoryLayers();
-	clearPageLayersSelect();
+	Page.clearLayersSelect();
 }
 
 function selectLayer(i){
@@ -192,23 +192,23 @@ function selectLayer(i){
 		console.log('Failed to select layer: ' + i);
 		return;
 	}
-	deselectPageComment();
-	clearPageFromAllComments();
+	Page.deselectComment();
+	Page.clearComments();
 	
 	let comovers = getMemoryCurrentComOvers(); // i
 	comovers.forEach((comOver, n, a) => {
-		addPageComOver(comOver);
+		Page.addComOver(comOver);
 	});
-	selectPageLayer(getMemoryCurrentLayerName(), i);
+	Page.selectLayer(getMemoryCurrentLayerName(), i);
 }
 
 function updateLanguage(){
-	Language.set(getPageLanguage());
+	Language.set(Page.getLanguage());
 }
 
 function addLayer(name, comovers){
 	addMemoryLayerToCurrentFile(name, comovers);
-	addPageLayer(name);
+	Page.addLayer(name);
 }
 
 function addEmptyLayer(){
@@ -221,24 +221,24 @@ function removeCurrentLayer(){
 		alert(Language.getPhrase('lastLayerAlert'));
 		return;
 	}
-	let layerIndex = getPageLayerIndex();
+	let layerIndex = Page.getLayerIndex();
 	if (layerIndex < 0)
 		return;
 	if (!confirm(Language.getPhrase('removeLayerConfirm')))
 		return;
 	removeMemoryLayerFromCurrentFile(layerIndex);
-	removePageLayer(layerIndex);
-	selectLayer(getPageLayerIndex());
+	Page.removeLayer(layerIndex);
+	selectLayer(Page.getLayerIndex());
 }
 
 function renameCurrentLayer(name){
 	let currentLayer = getMemoryCurrentLayer();
-	setPageLayerName(currentLayer, name);
+	Page.setLayerName(currentLayer, name);
 	setMemoryLayerName(currentLayer, name);
 }
 
 function updateLayer(){ 
-	let index = getPageLayerIndex();
+	let index = Page.getLayerIndex();
 	if (index == -1) return;
 	selectLayer(index);
 }
@@ -258,7 +258,7 @@ function manageLoadedJson(event){
 		let comOver = JsonUtil.convertToComOver(jsonComment,
 			(overlay) => {
 				overlay.classList.add('commentOverlayDiv');
-				if (isPageInEditorMode()){
+				if (Page.isInEditorMode()){
 					overlay.classList
 						.add('canvasOverlayDiv');
 					addSelectCommentListener(
@@ -296,7 +296,7 @@ function initCanvas() {
 	function updateMouseOffset(){
 		mouse.offsetX = 0;
 		mouse.offsetY = 0;
-		let el = getPageCanvas();
+		let el = Page.getCanvas();
 		while (el) {
 			mouse.offsetX += (el.offsetLeft -
 				el.scrollLeft +	el.clientLeft);
@@ -318,7 +318,7 @@ function initCanvas() {
 				document.body.scrollTop;
 		}
 		//canvas border correction
-		let canvas = getPageCanvas();
+		let canvas = Page.getCanvas();
 		if (mouse.x < 0)
 			mouse.x = 0;
 		else if (mouse.x > canvas.clientWidth)
@@ -334,7 +334,7 @@ function initCanvas() {
 		if (el.style.width == '0px' ||
 			el.style.height == '0px' ||
 			el.style.width == ''){
-			removePageCanvasElement(el);
+			Page.removeCanvasElement(el);
 			return;
 		}
 		let com = Element.newComment(
@@ -344,7 +344,7 @@ function initCanvas() {
 			parseInt(el.style.top) + 
 			parseInt(el.style.height) +
 			COMMENT_VERTICAL_OFFSET, '', el);
-		addPageCanvasElement(com);
+		Page.addCanvasElement(com);
 		addSelectCommentListener(el);
 		let comovers = getMemoryCurrentComOvers();
 		comovers.push(new ComOver(com, el));
@@ -355,12 +355,12 @@ function initCanvas() {
 		selectLayer(0);
 	}
 	
-	if(!isPageInEditorMode()) 
+	if(!Page.isInEditorMode()) 
 		return;
 	
-	initPageImagePadding();
+	Page.initImagePadding();
 	
-	initPageCommentInput(
+	Page.initCommentInput(
 		(e) => { 
 			switch(e.keyCode){
 				case 37: 
@@ -371,30 +371,30 @@ function initCanvas() {
 		},
 		() => {
 			let comover = getMemoryComOver(
-				getPageSelectedComment());
+				Page.getSelectedComment());
 			if (comover.notComplete()) return;
-			comover.setText(getPageCommentInput());
+			comover.setText(Page.getCommentInput());
 		}
 	);	
 	
-	initPageRemoveCommentButton();
-	initPageSizeInputs();
+	Page.initRemoveCommentButton();
+	Page.initSizeInputs();
 	
 	
 	if (checkMemoryClear()){
 		addCanvasDefaultFile();
 	}
-	initPageLayerInput(
+	Page.initLayerInput(
 			(e) => {e.stopPropagation()},
-			() => {renameCurrentLayer(getPageLayerInput());}
+			() => {renameCurrentLayer(Page.getLayerInput());}
 	)
-	initPageCanvasDiv(
+	Page.initCanvasDiv(
 		(e) => {
 			updateMouseOffset();
 			setMousePosition(e);
 			let x = e.pageX - mouse.offsetX;
 			let y = e.pageY - mouse.offsetY;
-			fillPageCoordinatesInfo(
+			Page.fillCoordinatesInfo(
 				'X : ' + mouse.x + ', Y : ' + mouse.y +
 				' (' + e.pageX + ':' + e.pageY + ')');
 			if (drawing === null)
@@ -422,7 +422,7 @@ function initCanvas() {
 				'canvasOverlayDiv');
 			drawing.style.left = mouse.x + 'px';
 			drawing.style.top = mouse.y + 'px';
-			addPageCanvasElement(drawing);
+			Page.addCanvasElement(drawing);
 		},
 		(e) => {
 			if (drawing !== null){ 
@@ -434,18 +434,18 @@ function initCanvas() {
 }
 
 function initMode(){
-	initPage();
-	initPageImagePanel();
+	Page.bind();
+	Page.initImagePanel();
 	initCanvas();
-	initPageFileInput(FileUtil.load);
-	fillPageLanguageSelect(Language.addOptions);
+	Page.initFileInput(FileUtil.load);
+	Page.fillLanguageSelect(Language.addOptions);
 	Language.update();	
 	if(getMemoryArchive()){
 		saveAndSelectFileAndLayer(getMemoryCurrentFile(),
 			getMemoryCurrentLayer());
 	}
 	else {
-		disablePageArchiveButtons(true);
+		Page.disableArchiveButtons(true);
 	}
 }
 
@@ -453,7 +453,7 @@ function launch(mode){
 	
 	function resetView(){
 		Document.clear();
-		clearPage();
+		Page.clear();
 		//clearMemory();
 	}
 	Language.init();
