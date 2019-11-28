@@ -30,7 +30,7 @@ function logError(error){
 function removeComment(el){
 	if (!el) 
 		return;
-	let comOver = removeMemoryComOver(el);
+	let comOver = Memory.removeComOverByOverlay(el);
 	Page.removeComOver(comOver);
 }
 
@@ -43,7 +43,7 @@ function selectComment(el){
 	Page.deselectComment();
 	if (!el)
 		return;
-	let comOver = getMemoryComOver(el);
+	let comOver = Memory.getComOverByOverlay(el);
 	if(!comOver)
 		return;
 	let commentText = comOver.getText();
@@ -53,18 +53,18 @@ function selectComment(el){
 }
 
 function goLeft(){
-	let length = getMemoryImageListLength();
+	let length = Memory.getImagesNumber();
 	if (length == 0) return;
-	let currentFile = getMemoryCurrentFile();
+	let currentFile = Memory.getCurrentFile();
 	(currentFile - 1 < 0) ?
 		saveAndSelectFileAndLayer(length - 1, 0) :
 		saveAndSelectFileAndLayer(currentFile - 1, 0);
 }
 
 function goRight(){
-	let length = getMemoryImageListLength();
+	let length = Memory.getImagesNumber();
 	if (length == 0) return;
-	let currentFile = getMemoryCurrentFile();
+	let currentFile = Memory.getCurrentFile();
 	(currentFile + 1 >= length) ?
 			saveAndSelectFileAndLayer(0, 0) :
 			saveAndSelectFileAndLayer(currentFile + 1, 0);
@@ -76,18 +76,18 @@ function selectFile(i){
 		jsonReader.readAsText(blob);
 	}
 	
-	let imageListLength = getMemoryImageListLength()
-	if (i < 0 || i >= imageListLength){
+	let imageNumber = Memory.getImagesNumber()
+	if (i < 0 || i >= imageNumber){
 		console.log('Tried to select image: ' + i +
-			', number of images: ' + imageListLength);
+			', number of images: ' + imageNumber);
 		return;
 	}
-	if (!setMemoryCurrentFile(i)){
+	if (!Memory.setCurrentFile(i)){
 		console.log('Failed to select file: ' + i);
 		return;
 	}
 	let currentFile = i;
-	let currentImage = getMemoryImageNameWithPath(
+	let currentImage = Memory.getFullImageName(
 		currentFile);
 	if (currentImage === null){
 		console.log('selectFile panic, ' +
@@ -95,17 +95,17 @@ function selectFile(i){
 		return;
 	}
 	Page.fillFileInfo(currentImage +	' ' + (currentFile + 1)
-		+ '/' + imageListLength + ' ');
+		+ '/' + imageNumber + ' ');
 
-	let archive = getMemoryArchive();
+	let archive = Memory.getArchive();
 	archive.file(currentImage)
 		.async('blob').then(Page.manageImage,
 		logError
 		);	
 	
-	if (getMemoryCommentFileListLength() > 0){
+	if (Memory.getCommentFilesNumber() > 0){
 		let currentCommentFile = 
-			getMemoryCommentFileName(currentFile);
+			Memory.getFullCommentFileName(currentFile);
 		if (currentImage === null){
 			console.log('selectFile panic, ' +
 				'current comment file name is null');
@@ -119,13 +119,13 @@ function selectFile(i){
 }
 
 function selectFileAndLayer(f, l){
-	setMemoryNextLayer(l);
+	Memory.setNextLayer(l);
 	selectFile(f);
 }
 
 function currentFileLayersListToWrite(){
 	
-	let layersList = getMemoryLayersList();
+	let layersList = Memory.getLayers();
 	if (!Array.isArray(layersList)){
 		console.log('currentFileLayersListToWrite panic, ' +
 			'not an array: ' + i);
@@ -137,8 +137,8 @@ function currentFileLayersListToWrite(){
 function saveCurrentFileToArchive(){
 	return new Promise((resolve, reject) => {
 		let f = new FileReader();
-		let filename = getMemoryCurrentCommentFileName();
-		let archive = getMemoryArchive();
+		let filename = Memory.getFullCurrentCommentFileName();
+		let archive = Memory.getArchive();
 		f.onload = (e) => {
 			file = JSON.parse(event.target.result);
 			file.layers = currentFileLayersListToWrite();
@@ -170,36 +170,36 @@ function clearCanvas(){
 function clearArchive(){
 	if (!confirm(Language.getPhrase(
 		'removeArchiveConfirm'))) return;
-	clearMemoryArchive();
+	Memory.clearArchive();
 	Page.clearArchive();
 }
 	
 function removeFileLayers(){
-	clearMemoryLayers();
+	Memory.clearLayers();
 	Page.clearLayersSelect();
 }
 
 function selectLayer(i){
-	let LayersListLength = getMemoryLayersListLength();
-	if (i < 0 || i >= LayersListLength){
+	let LayersNumber = Memory.getLayersNumber();
+	if (i < 0 || i >= LayersNumber){
 		console.log('Tried to select layer: ' + i +
-			', number of layers: ' + LayersListLength +
+			', number of layers: ' + LayersNumber +
 			'\nresetting current Layer to 0...');
-		setMemoryCurrentLayer(0);
+		Memory.setCurrentLayer(0);
 		return;
 	}
-	if (!setMemoryCurrentLayer(i)){
+	if (!Memory.setCurrentLayer(i)){
 		console.log('Failed to select layer: ' + i);
 		return;
 	}
 	Page.deselectComment();
 	Page.clearComments();
 	
-	let comovers = getMemoryCurrentComOvers(); // i
+	let comovers = Memory.getCurrentComOvers(); // i
 	comovers.forEach((comOver, n, a) => {
 		Page.addComOver(comOver);
 	});
-	Page.selectLayer(getMemoryCurrentLayerName(), i);
+	Page.selectLayer(Memory.getCurrentLayerName(), i);
 }
 
 function updateLanguage(){
@@ -207,7 +207,7 @@ function updateLanguage(){
 }
 
 function addLayer(name, comovers){
-	addMemoryLayerToCurrentFile(name, comovers);
+	Memory.addLayer(name, comovers);
 	Page.addLayer(name);
 }
 
@@ -216,7 +216,7 @@ function addEmptyLayer(){
 }
 
 function removeCurrentLayer(){
-	let layersNumber = getMemoryLayersListLength();
+	let layersNumber = Memory.getLayersNumber();
 	if (layersNumber == 1){
 		alert(Language.getPhrase('lastLayerAlert'));
 		return;
@@ -226,15 +226,15 @@ function removeCurrentLayer(){
 		return;
 	if (!confirm(Language.getPhrase('removeLayerConfirm')))
 		return;
-	removeMemoryLayerFromCurrentFile(layerIndex);
+	Memory.removeLayer(layerIndex);
 	Page.removeLayer(layerIndex);
 	selectLayer(Page.getLayerIndex());
 }
 
 function renameCurrentLayer(name){
-	let currentLayer = getMemoryCurrentLayer();
-	Page.setLayerName(currentLayer, name);
-	setMemoryLayerName(currentLayer, name);
+	let currentLayerIndex = Memory.getCurrentLayer();
+	Page.setLayerName(currentLayerIndex, name);
+	Memory.setLayerName(currentLayerIndex, name);
 }
 
 function updateLayer(){ 
@@ -283,8 +283,8 @@ function manageLoadedJson(event){
 		);
 		addLayer(JsonUtil.getLayerName(jsonLayer), comovers);
 	});
-	selectLayer(getMemoryNextLayer());
-	setMemoryNextLayer(0);
+	selectLayer(Memory.getNextLayer());
+	Memory.setNextLayer(0);
 }
 
 function initCanvas() {
@@ -346,7 +346,7 @@ function initCanvas() {
 			COMMENT_VERTICAL_OFFSET, '', el);
 		Page.addCanvasElement(com);
 		addSelectCommentListener(el);
-		let comovers = getMemoryCurrentComOvers();
+		let comovers = Memory.getCurrentComOvers();
 		comovers.push(new ComOver(com, el));
 	}
 	
@@ -370,7 +370,7 @@ function initCanvas() {
 			}
 		},
 		() => {
-			let comover = getMemoryComOver(
+			let comover = Memory.getComOverByOverlay(
 				Page.getSelectedComment());
 			if (comover.notComplete()) return;
 			comover.setText(Page.getCommentInput());
@@ -381,7 +381,7 @@ function initCanvas() {
 	Page.initSizeInputs();
 	
 	
-	if (checkMemoryClear()){
+	if (Memory.isClear()){
 		addCanvasDefaultFile();
 	}
 	Page.initLayerInput(
@@ -440,9 +440,9 @@ function initMode(){
 	Page.initFileInput(FileUtil.load);
 	Page.fillLanguageSelect(Language.addOptions);
 	Language.update();	
-	if(getMemoryArchive()){
-		saveAndSelectFileAndLayer(getMemoryCurrentFile(),
-			getMemoryCurrentLayer());
+	if(Memory.getArchive()){
+		saveAndSelectFileAndLayer(Memory.getCurrentFile(),
+			Memory.getCurrentLayer());
 	}
 	else {
 		Page.disableArchiveButtons(true);
@@ -454,10 +454,10 @@ function launch(mode){
 	function resetView(){
 		Document.clear();
 		Page.clear();
-		//clearMemory();
+		//Memory.clear();
 	}
 	Language.init();
-	removeMemoryDefaultLayerIfPresent();
+	Memory.removeDefaultLayer();
 	resetView();
 	let template = Template.get(mode);
 	if (template === null)

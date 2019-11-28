@@ -30,11 +30,11 @@ var FileUtil = (function(){
 							h: image.naturalHeight});
 					image.src = e.target.result;
 				}
-				let imageName = getMemoryImageNameWithPath(index);
+				let imageName = Memory.getFullImageName(index);
 				if (imageName === null){
 					reject('Image name not retrieved');
 				}
-				let archive = getMemoryArchive();
+				let archive = Memory.getArchive();
 				archive.file(imageName).async('blob')
 					.then((blob) => {
 						f.readAsDataURL(blob);
@@ -44,20 +44,20 @@ var FileUtil = (function(){
 		
 		async function addDefaultJsonFileToArchive(index){
 			let size = await getImageSize(index);
-			let imageName = getMemoryImageNameNoPath(index);
+			let imageName = Memory.getImageNameNoPath(index);
 			let defaultLayer = new JsonLayer(DEFAULT_LAYER_NAME,
 				[]);
 			let body = JSON.stringify(new JsonFile(1, imageName,
 				size.w, size.h, [defaultLayer]));
 			
-			RewriteMemoryCommentFile(index, body);
+			Memory.RewriteCommentFile(index, body);
 		}
 		
 		async function finishLoading(){
-			let imagesNum = getMemoryImageListLength();
-			let commentsNum = getMemoryCommentFileListLength();
+			let imagesNum = Memory.getImagesNumber();
+			let commentsNum = Memory.getCommentFilesNumber();
 			if (imagesNum <	commentsNum)
-				TruncateMemoryCommentFilesList(imagesNum);
+				Memory.TruncateCommentFiles(imagesNum);
 			if (imagesNum >	commentsNum) {
 				for (let i = commentsNum; i < imagesNum; i++)
 					await addDefaultJsonFileToArchive(i);
@@ -70,7 +70,7 @@ var FileUtil = (function(){
 		if (ParseUtil.isImageMime(f.type)){
 			//image case
 			clean();		
-			archive = initMemoryForSingleImage(f.name);
+			archive = Memory.initForSingleImage(f.name);
 			let singleImageReader = new FileReader();
 			singleImageReader.onload = (e) => {
 				archive.file(
@@ -106,7 +106,7 @@ var FileUtil = (function(){
 			
 			clean();
 			
-			initMemoryForArchive(z, tempImages, tempJsons);
+			Memory.initForArchive(z, tempImages, tempJsons);
 			finishLoading().then(() => 
 				selectFileAndLayer(0, 0));
 		},
@@ -120,9 +120,9 @@ var FileUtil = (function(){
 		let canvas = Page.getCanvas();
 		if (!canvas) return;
 		let imageName = DEFAULT_IMAGE_NAME;
-		if (getMemoryImageListLength() > 0)
-			imageName = getMemoryImageNameNoPath(
-				getMemoryCurrentFile());
+		if (Memory.getImagesNumber() > 0)
+			imageName = Memory.getImageNameNoPath(
+				Memory.getCurrentFile());
 		let layers = currentFileLayersListToWrite();
 		let body = JSON.stringify(new JsonFile(1, imageName,
 			canvas.clientWidth, canvas.clientHeight,
@@ -136,7 +136,7 @@ var FileUtil = (function(){
 	}
 	
 	function save(){
-		let archive = getMemoryArchive();
+		let archive = Memory.getArchive();
 		if (!archive) return;
 		
 		saveCurrentFileToArchive().then(() => {
