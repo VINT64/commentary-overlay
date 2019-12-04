@@ -15,7 +15,7 @@ var FileUtil = (function(){
 		function clean(){ 
 			Page.clearImage();
 			Page.clearComments();
-			removeFileLayers();
+			Main.removeFileLayers();
 		}
 		
 		function getImageSize(index){
@@ -78,7 +78,7 @@ var FileUtil = (function(){
 					e.target.result,
 					{binary: true});
 					finishLoading()
-						.then(() => selectFileAndLayer(0, 0));
+						.then(() => Main.selectAfterLoading());
 			}
 			singleImageReader.readAsBinaryString(f);
 			return;
@@ -108,7 +108,7 @@ var FileUtil = (function(){
 			
 			Memory.initForArchive(z, tempImages, tempJsons);
 			finishLoading().then(() => 
-				selectFileAndLayer(0, 0));
+				Main.selectAfterLoading());
 		},
 		(e) => {
 			alert(Language.getPhrase('notImageOrArchiveAlert'));
@@ -123,7 +123,7 @@ var FileUtil = (function(){
 		if (Memory.getImagesNumber() > 0)
 			imageName = Memory.getImageNameNoPath(
 				Memory.getCurrentFile());
-		let layers = currentFileLayersListToWrite();
+		let layers = Main.currentFileLayersListToWrite();
 		let body = JSON.stringify(new JsonFile(1, imageName,
 			canvas.clientWidth, canvas.clientHeight,
 			layers));
@@ -139,7 +139,7 @@ var FileUtil = (function(){
 		let archive = Memory.getArchive();
 		if (!archive) return;
 		
-		saveCurrentFileToArchive().then(() => {
+		Main.saveCurrentFileToArchive().then(() => {
 			archive.generateAsync({type:'blob'})
 				.then((blob) => {
 					saveAs(blob, '');

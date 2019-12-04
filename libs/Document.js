@@ -26,10 +26,15 @@ var Document = (function(){
 		return document.createTextNode(text);
 	}
 
+	function setPage(el){
+		document.body.appendChild(el);
+	}
+
 	return {
 		getElement: getElement,
 		newElement: newElement,
 		clear: clear,
-		createText: createText
+		createText: createText,
+		setPage: setPage
 	}
 }());

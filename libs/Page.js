@@ -183,6 +183,13 @@ var Page = (function(){
 			page.layerSelect.remove(i);
 	}
 	
+	function clearCanvas(){
+		if (!isInEditorMode() ||
+			!confirm(Language.getPhrase(
+			'removeAllCommentsConfirm'))) return;
+		clearComments();
+	}	
+
 	function getLanguage(){
 		if (!page.languageSelect) return null;
 		return page.languageSelect.value;
@@ -383,6 +390,7 @@ var Page = (function(){
 		disableArchiveButtons: disableArchiveButtons,
 		clearArchive: clearArchive,
 		clearLayersSelect: clearLayersSelect,
+		clearCanvas: clearCanvas,
 		getLanguage: getLanguage,
 		addLayer: addLayer,
 		removeLayer: removeLayer,

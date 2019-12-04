@@ -13,11 +13,11 @@ var Template = (function(){
 				<div class="upperRight">
 					<button type="button" 
 						id="editorButton" 
-						onclick="launch('editor')">
+						onclick="Main.launch('editor')">
 					</button>
 					<br>
 					<select id="languageSelect" 
-						onchange="updateLanguage()">
+						onchange="Main.updateLanguage()">
 					</select>
 				</div>
 				<div id="controlPanel">
@@ -35,20 +35,22 @@ var Template = (function(){
 					<p>
 						<span id="fileInfo"></span>
 						<select id="layerSelect" 
-						onchange="updateLayer()">
+						onchange="Main.updateLayer()">
 						</select>
 					</p>
 				</div>
 				<div id="gallery">
 					<button type="button" 
-						class="nav"onclick="goLeft()">
+						class="nav" 
+						onclick="Main.goLeft()">
 						&lt;
 					</button>
 					<div id="imageDiv">
 						<div id="allCommentsDiv"></div>
 					</div>
 					<button type="button" 
-						class="nav"onclick="goRight()">
+						class="nav"
+						onclick="Main.goRight()">
 						&gt;
 					</button>
 				</div>
@@ -58,11 +60,11 @@ var Template = (function(){
 				<div class="upperRight">
 					<button type="button" 
 						id="viewerButton" 
-						onclick="launch('viewer')">
+						onclick="Main.launch('viewer')">
 					</button>
 					<br>
 					<select id="languageSelect" 
-						onchange="updateLanguage()">
+						onchange="Main.updateLanguage()">
 					</select>
 					<br>
 					<span id="coordinatesInfo">
@@ -78,7 +80,7 @@ var Template = (function(){
 						</button>
 						<button type="button" 
 							id="clearArchiveButton" 
-							onclick="clearArchive()">
+							onclick="Main.clearArchive()">
 						</button>
 						</button>
 						<button type="button" 
@@ -96,15 +98,16 @@ var Template = (function(){
 						<input type="text" 
 						id="layerInput">
 						<select id="layerSelect" 
-						onchange="updateLayer()">
+						onchange="Main.updateLayer()">
 						</select>
 						<button type="button" 
 							id="addLayerButton" 
-							onclick="addEmptyLayer()">
+							onclick="Main.addEmptyLayer()">
 						</button>
 						<button type="button" 
 							id="removeLayerButton" 
-							onclick="removeCurrentLayer()">
+							onclick="
+								Main.removeCurrentLayer()">
 						</button>
 					</p>
 					<p>
@@ -118,7 +121,7 @@ var Template = (function(){
 							min="1" value="512">
 						<button type="button" 
 							id="removeAllCommentsButton" 
-							onclick="clearCanvas()">
+							onclick="Page.clearCanvas()">
 						</button>
 						<button type="button" 
 							id="saveJsonButton" 
@@ -134,19 +137,19 @@ var Template = (function(){
 						<button type="button" 
 							id="removeCommentButton" 
 							onclick="
-							removeSelectedComment()">
+							Main.removeSelectedComment()">
 						</button>
 					</p>
 				</div>
 				<div id="gallery">
 					<button type="button" class="nav" 
-						onclick="goLeft()">
+						onclick="Main.goLeft()">
 						&lt;
 					</button>
 					<div id="canvasDiv"></div>
 					<div id="imageDiv"></div>
 					<button type="button" class="nav" 
-						onclick="goRight()">
+						onclick="Main.goRight()">
 						&gt;
 					</button>
 				</div>
