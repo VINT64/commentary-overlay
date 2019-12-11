@@ -4,12 +4,12 @@
 Supported archives: zip.\
 Supported images:  png/jpeg/gif.\
 ##### Instructions: 
-Open HTML with program, change language if needed. Program has two modes: viewer and editor.\
+Open HTML with program, change language if needed. Program has two modes: viewer and editor.
 ###### Viewer mode: 
 Choose archive with images and json comment files. First image with overlays will be shown on screen. Comment appears on hover over the overlay. All overlays are hidden on click on image.\
 Hotkeys:
 * Arrows left, right — scroll images.\
-Some details about archives: it's preferred that archive contains equal number of images and json comment files (all must validate json schema). Images and comments will be uploaded and sorted lexicographically (10.jpg will be before 8.jpg, but after 08.jpg) and paired correspondingly.\
+Some details about archives: it's preferred that archive contains equal number of images and json comment files (all must validate json schema). Images and comments will be uploaded and sorted lexicographically (10.jpg will be before 8.jpg, but after 08.jpg) and paired correspondingly.
 ###### Editor mode:
 Upload one image or archive with images. Json comment files can be present. After archive upload canvas size is locked. If only one image was opened, the resulting archive will contain one image and one comment file (obviously).\
 All the comment files found will be uploaded from the archive. If there are more images than comments,'default' comment files will be created with a single layer each. Archive can be saved anytime, as well as current comment file. **Attention**, don't overwrite an existing archive on hard drive, better save edited archive as new one.\
