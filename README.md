@@ -1,8 +1,8 @@
-# Program for viewing and editing overlays with comments for images
 Версия на русском ниже
+# Program for viewing and editing overlays with comments for images
 ##### version: beta3.1 (2019-12-11)
 Supported archives: zip.\
-Supported images:  png/jpeg/gif.\
+Supported images:  png/jpeg/gif.
 ##### Instructions: 
 Open HTML with program, change language if needed. Program has two modes: viewer and editor.
 ###### Viewer mode: 
@@ -18,26 +18,25 @@ Overlays are selected on click. Selected overlay's comment can be edited. It can
 Layers can be added and removed by corresponding buttons on panel, current layer's name can be edited. Last layer left can't be deleted.\
 Editor can be used in free mode without images, with possibility to set canvas size. In this mode archive can't be saved, only comment file. To enter the mode after image or archive was opened,  push the "something canvas" on the control panel.\
 Hotkeys:
-* Arrows left, right — scroll images
-* Esc — deselect comment
-* Del — remove selected comment
-  
+* Arrows left, right — scroll images.
+* Esc — deselect comment.
+* Del — remove selected comment.  
 
-###### Waiting for fix: 
+###### Planned fixes: 
 
 ###### Possible ameliorations:
 * General:
-  * Support of another archive and image formats
-  * Implement validation of json comment files against schema
+  * Support of another archive and image formats.
+  * Implement validation of json comment files against schema.
 * Viewer:
-  * Add "auto-scale" option — if image size differs from expected one, comment overlays will be scaled to correspond to image size
-  * Warn about unsaved changes upon closing the program,
+  * Add "auto-scale" option — if image size differs from expected one, comment overlays will be scaled to correspond to image size.
+  * Warn about unsaved changes upon closing the program.
 * Editor:
-  * Manual set of filename and size, author attribution
-  * Warn over unsaved changes
-  * Move overlays and change their size
-  * Don't save comments if overlays surpass canvas size
-  * implement undo, redo
+  * Manual set of filename and size, author attribution.
+  * Warn over unsaved changes.
+  * Move overlays and change their size.
+  * Don't save comments if overlays surpass canvas size.
+  * Implement undo, redo.
 
 
 # Программа для просмотра и редактирования оверлеев с комментариями для изображений
@@ -49,7 +48,7 @@ Hotkeys:
 ###### Режим просмотра: 
 Выбрать архив с изображениями и файлами json с комментариями. Будет показано первое изображение с оверлеями поверх него. По наведению на оверлей появляется комментарий. По щелчку на любом участке изображения все оверлеи скрываются.\
 Горячие клавиши:
-* Стрелки влево-вправо — прокрутка изображений\
+* Стрелки влево-вправо — прокрутка изображений.\
 Касательно архива: предпочтительно, чтобы архив содержал одинаковое количество изображений и json файлов, все файлы должны соответствовать схеме (json-схема для файлов лежит в корне проекта). Изображения и комментарии будут загружены и отсортированы в лексикографическом порядке (10.jpg будет раньше, чем 8.jpg, но позже, чем 08.jpg) и сопоставлены соответственно.
 ###### Режим редактора:
 Выбрать архив с изображениями или одно изображение. В последнем случае на выходе будет архив с одним изображением и соответствующим комментарием (-- КО). После выбора размер холста фиксирован.\
@@ -59,24 +58,23 @@ Hotkeys:
 Слои можно добавлять и удалять соответствующими кнопками на панели. Выделенному слою можно менять имя. Последний оставшийся слой нельзя удалить.\
 В редакторе есть свободный режим с возможностью задавать размер холста. В этом режиме нельзя сохранить архив, только одиночный файл с комментариями. Чтобы войти в этот режим после того, как был открыт архив, нажмите кнопку "чистый холст"\
 Горячие клавиши:
-* Стрелки влево-вправо — прокрутка подложек
-* Esc — снять выделение
-* Del — удалить выделенный комментарий\
-  
+* Стрелки влево-вправо — прокрутка подложек.
+* Esc — снять выделение.
+* Del — удалить выделенный комментарий.  
 
 ###### Ожидают исправления: 
 
 ###### Возможные улучшения:
 * Общие:
-  * Поддержка других форматов архивов и изображений
-  * Внедрить проверку на соответствие json файлов схеме
+  * Поддержка других форматов архивов и изображений.
+  * Внедрить проверку на соответствие json файлов схеме.
 * Просмотрщик:
-  * Добавить опцию "автоподгон масштаба" — если размер изображения отличается от ожидаемого, оверлеи комментариев масштабируются, чтобы соответствовать размеру изображения
+  * Добавить опцию "автоподгон масштаба" — если размер изображения отличается от ожидаемого, оверлеи комментариев масштабируются, чтобы соответствовать размеру изображения.
 
 * Редактор:
-  * Указание имени и размера файла вручную, указание авторства
-  * Перемещение и изменение размера оверлеев
-  * Не сохранять комментарии, оверлеи которых выходят за пределы холста
-  * undo, redo
+  * Указание имени и размера файла вручную, указание авторства.
+  * Перемещение и изменение размера оверлеев.
+  * Не сохранять комментарии, оверлеи которых выходят за пределы холста.
+  * Undo, redo.
 
 
