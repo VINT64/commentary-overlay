@@ -8,9 +8,9 @@ https://unlicense.org ) */
 //uses memory structure of comOver. Create object with new,
 //getters and setters?
 
-function JsonFile(version, imageName,
+function JsonFile1(imageName,
 	imageWidth, imageHeight, layers){
-		this.version = version; 
+		this.version = 1; 
 		this.image_name = imageName;
 		this.image_width = imageWidth;
 		this.image_height = imageHeight;

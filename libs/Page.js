@@ -186,7 +186,7 @@ var Page = (function(){
 	function clearCanvas(){
 		if (!isInEditorMode() ||
 			!confirm(Language.getPhrase(
-			'removeAllCommentsConfirm'))) return;
+			'removeAllCommentsFromLayerConfirm'))) return;
 		clearComments();
 	}	
 

@@ -3,58 +3,29 @@ All code copied from Stack Overflow and
 other places keeps its respective licenses.
 All original code is unlicensed (more info
 https://unlicense.org ) */
-div#controlPanel {
-	text-align: center;
-}
-.upperRight {
-	text-align: right;
-	position: fixed;
-	right: 0px;
-	margin: 0 10px;
-}
 
-div#controlPanel > p {
-	margin: 10px 0;
-}
-input#fileInput {
-	visibility: hidden;
-	position: absolute;
-}
-div#gallery {
-	text-align: center;
-	white-space: nowrap;
-}
-div#imageDiv {
-	display: inline-block;
-	vertical-align: middle;
-}
+/* you modify these parameters to customize viewer
+but it's better not to add any other, especially
+position-related, as they can break things */
 
-/*
-button.nav {
-	height: 100%;
-}
-*/
-div#allCommentsDiv {
-	position: absolute;
-}
 div.commentDiv {
 	border: 1px solid #000;
 	background: #fff;
-	position: absolute;
 	padding: 4px;
 }
+
 div.commentOverlayDiv {
 	border: 1px solid #000;
 	background: rgba(255, 255, 255, 0.5);
-	position: absolute;
 }
-/* editor-specific part */
+
+div.selected {
+	border: 1px solid #0078d7;
+	background: rgba(0, 120, 215, 0.5);
+}
 
 div#canvasDiv {
-	vertical-align: middle;
 	background: transparent;
-	display: inline-block;
-	position: absolute;
 	border: 5px solid #000;
 }
 
@@ -66,7 +37,46 @@ div.canvasOverlayDiv {
 	cursor: pointer;
 }
 
-div.selected {
-	border: 1px solid #0078d7;
-	background: rgba(0, 120, 215, 0.5);
+div#controlPanel {
+	text-align: center; /* can be changed, but why? */
+}
+
+div#controlPanel > p {
+	margin: 10px 0; /*intervals between lines */
+}
+
+div#gallery {
+	text-align: center; /* can be changed, but why? */
+}
+
+/* you do not touch these parameters */
+
+input#fileInput {
+	visibility: hidden;
+	position: absolute;
+}
+
+div#imageDiv {
+	display: inline-block;
+	vertical-align: middle;
+}
+
+div#allCommentsDiv {
+	position: absolute;
+}
+
+div.commentDiv {
+	position: absolute;
+}
+
+div.commentOverlayDiv {
+	position: absolute;
+}
+
+div#canvasDiv {
+	display: inline-block;
+	position: absolute;
+}
+div#gallery {
+	white-space: nowrap;
 }

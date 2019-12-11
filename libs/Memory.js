@@ -36,6 +36,11 @@ var Memory = (function(){
 		memory.openLayers = [];
 	}
 	
+	function clearCurrentLayer(){
+		memory.openLayers[memory.currentLayer]
+			.clearComOversList();
+	}
+
 	function clear(){
 		clearArchive();
 		clearLayers();
@@ -289,6 +294,7 @@ var Memory = (function(){
 		clearArchive: clearArchive,
 		isClear: isClear,
 		clearLayers: clearLayers,
+		clearCurrentLayer: clearCurrentLayer,
 		//clear: clear,
 		addLayer: addLayer,
 		removeLayer: removeLayer,
@@ -326,6 +332,9 @@ function Layer(name, list){
 	this.getName = function(){return this.name};
 	this.getComOversList = function(){
 		return this.comovers;
+	};
+	this.clearComOversList = function(){
+		this.comovers = [];
 	};
 	this.setName = function(n){
 		if (typeof n !== 'string')

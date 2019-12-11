@@ -88,7 +88,12 @@ var Main = (function(){
 		});
 		Page.selectLayer(Memory.getCurrentLayerName(), i);
 	}	
-		
+	
+	function clearCurrentLayer(){
+		Memory.clearCurrentLayer();
+		Page.clearCanvas();
+	}
+
 	function removeCurrentLayer(){
 		let layersNumber = Memory.getLayersNumber();
 		if (layersNumber == 1){
@@ -468,6 +473,7 @@ var Main = (function(){
 		removeSelectedComment: removeSelectedComment,
 		removeFileLayers: removeFileLayers,
 		addEmptyLayer: addEmptyLayer,
+		clearCurrentLayer: clearCurrentLayer,
 		removeCurrentLayer: removeCurrentLayer,
 		updateLayer: updateLayer,
 		selectFileAndLayer: selectFileAndLayer,

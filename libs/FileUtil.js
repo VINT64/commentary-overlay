@@ -47,7 +47,7 @@ var FileUtil = (function(){
 			let imageName = Memory.getImageNameNoPath(index);
 			let defaultLayer = new JsonLayer(DEFAULT_LAYER_NAME,
 				[]);
-			let body = JSON.stringify(new JsonFile(1, imageName,
+			let body = JSON.stringify(new JsonFile1(imageName,
 				size.w, size.h, [defaultLayer]));
 			
 			Memory.RewriteCommentFile(index, body);
@@ -124,7 +124,7 @@ var FileUtil = (function(){
 			imageName = Memory.getImageNameNoPath(
 				Memory.getCurrentFile());
 		let layers = Main.currentFileLayersListToWrite();
-		let body = JSON.stringify(new JsonFile(1, imageName,
+		let body = JSON.stringify(new JsonFile1(imageName,
 			canvas.clientWidth, canvas.clientHeight,
 			layers));
 		let blob = new Blob([body],	
