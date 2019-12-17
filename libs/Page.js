@@ -195,10 +195,17 @@ var Page = (function(){
 		return page.languageSelect.value;
 	}
 	
+	function applyLanguage(lang){
+		for (let key in lang){
+			let el = Document.getElement(key);
+			if (el)
+				el.textContent = lang[key];
+		}
+	}
+
 	function addLayer(name){
 		if (page.layerSelect){
-			let option = Document.newElement('option');
-			option.text = name;
+			let option = Element.newOption(name);
 			page.layerSelect.add(option);
 		}
 	}
@@ -241,7 +248,7 @@ var Page = (function(){
 		}
 	
 		clearImage();
-		let image = Document.newElement('img');
+		let image = Element.newImage();
 		image.id = IMAGE_ID;
 		image.src = event.target.result;
 		page.imageDiv.appendChild(image);
@@ -364,9 +371,12 @@ var Page = (function(){
 		page.fileInput.addEventListener('change', onchangeFun);
 	}
 	
-	function fillLanguageSelect(fillingFun){
+	function fillLanguageSelect(list){
 		if (!page.languageSelect) return;
-		fillingFun(page.languageSelect);
+		for(const lang of list){
+			let option = Element.newOption(lang);
+			page.languageSelect.add(option);
+		}
 	}
 	
 	function manageImage(blob){
@@ -392,6 +402,7 @@ var Page = (function(){
 		clearLayersSelect: clearLayersSelect,
 		clearCanvas: clearCanvas,
 		getLanguage: getLanguage,
+		applyLanguage: applyLanguage,
 		addLayer: addLayer,
 		removeLayer: removeLayer,
 		getLayerIndex: getLayerIndex,

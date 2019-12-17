@@ -4,8 +4,6 @@ other places keeps its respective licenses.
 All original code is unlicensed (more info
 https://unlicense.org ) */
 
-//uses Document
-
 var Language = (function(){
 
 	const langs = [
@@ -70,42 +68,37 @@ var Language = (function(){
 	
 	let currentLanguage = '';
 	
-	function update(){
-		langs.forEach((lang, i, a) => {
-			if (lang.id == currentLanguage)
-				for (let key in lang){
-					let el = Document.getElement(key);
-					if (el)
-						el.textContent = lang[key];
-				}
-		});
+	function findCurrent(){
+		return langs.find(
+			lang => lang.id == currentLanguage);
 	}
-	
-	function set(language){
+
+	function applyCurrent(apply){
+		let lang = findCurrent();
+		if(lang)
+			apply(lang);
+	}
+
+	function set(language, apply){
 		currentLanguage = language;
-		update();
+		applyCurrent(apply);
 	}
 	
 	function getPhrase(phrase){
-		let ret = phrase;
-		langs.forEach((lang, i, a) => {
-			if (lang.id == currentLanguage)
-				ret = lang[phrase];
-		});
-		if (ret === undefined)
-			ret = phrase;
+		let lang = findCurrent();
+		if(lang && lang[phrase])
+			return lang[phrase];
+		return phrase;
+	}
+	
+	function getList(){
+		let ret = [];
+		for(const lang of langs){
+			ret.push(lang.id);
+		}
 		return ret;
 	}
-	
-	function addOptions(select){
-		langs.forEach((lang, i, a) => {
-			let option = Document.newElement('option');
-			option.text = lang.id;
-			select.add(option);
-		});
-		select.value = currentLanguage;
-	}
-	
+
 	function init(){
 		if (currentLanguage == '')
 			currentLanguage = 'en';
@@ -113,10 +106,10 @@ var Language = (function(){
 	
 
 	return {
-		update: update,
+		applyCurrent: applyCurrent,
 		set: set,
 		getPhrase: getPhrase,
-		addOptions: addOptions,
+		getList: getList,
 		init: init
 	}
 }());

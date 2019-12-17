@@ -14,7 +14,8 @@ var Main = (function(){
 	}
 	
 	function updateLanguage(){
-		Language.set(Page.getLanguage());
+		Language.set(Page.getLanguage(),
+			Page.applyLanguage);
 	}	
 
 	function selectComment(el){
@@ -42,12 +43,14 @@ var Main = (function(){
 	
 		removeComment(Page.getSelectedComment());
 	}
-		
+	
 	function addSelectCommentListener(el){
-		el.onmousedown = (e) => {
-			e.stopPropagation();
-		};
-		el.onmouseup = (e) => {
+		// el.onmousedown = (e) => {
+		// 	//prevents canvas from starting drawing new overlay
+		// 	e.stopPropagation(); 
+		// };
+		Drawing.dragElement(el);
+		el.onclick = (e) => {
 			selectComment(el);
 		};
 	}
@@ -83,7 +86,7 @@ var Main = (function(){
 		Page.clearComments();
 		
 		let comovers = Memory.getCurrentComOvers(); // i
-		comovers.forEach((comOver, n, a) => {
+		comovers.forEach(comOver => {
 			Page.addComOver(comOver);
 		});
 		Page.selectLayer(Memory.getCurrentLayerName(), i);
@@ -126,8 +129,6 @@ var Main = (function(){
 			let comOver = JsonUtil
 				.convertToComOver(jsonComment,
 				(overlay) => {
-					overlay.classList
-						.add('commentOverlayDiv');
 					if (Page.isInEditorMode()){
 						overlay.classList
 							.add('canvasOverlayDiv');
@@ -144,10 +145,10 @@ var Main = (function(){
 	
 		let json = JSON.parse(event.target.result);
 		let layers = JsonUtil.getFileLayersList(json);
-		layers.forEach((jsonLayer, i, a) => {
+		layers.forEach(jsonLayer => {
 			let comovers = [];
 			JsonUtil.getLayerCommentsList(jsonLayer)
-				.forEach((json, j, ar) => {
+				.forEach(json => {
 					addComment(json, comovers);
 				}
 			);
@@ -280,69 +281,30 @@ var Main = (function(){
 		Page.clearArchive();
 	}	
 
+	function initOverlay(el){
+		if (el.style.width == '0px' ||
+			el.style.height == '0px' ||
+			el.style.width == ''){
+			Page.removeCanvasElement(el);
+			return;
+		}
+		el.classList.add('canvasOverlayDiv');
+		//el.style.resize = 'both';
+		//el.style.overflow = 'hidden';
+		let com = Element.newComment(
+			parseInt(el.style.left, 10) + 
+			//parseInt(el.style.width, 10) +
+			COMMENT_HORIZONTAL_OFFSET,
+			parseInt(el.style.top, 10) + 
+			parseInt(el.style.height, 10) +
+			COMMENT_VERTICAL_OFFSET, '', el);
+		Page.addCanvasElement(com);
+		addSelectCommentListener(el);
+		let comovers = Memory.getCurrentComOvers();
+		comovers.push(new ComOver(com, el));
+	}
+
 	function initCanvas() {
-	
-		let mouse = { x: 0, y: 0, startX: 0,
-			startY: 0, offsetX: 0, offsetY: 0};
-		let drawing = null;
-		
-		function updateMouseOffset(){
-			mouse.offsetX = 0;
-			mouse.offsetY = 0;
-			let el = Page.getCanvas();
-			while (el) {
-				mouse.offsetX += (el.offsetLeft -
-					el.scrollLeft +	el.clientLeft);
-				mouse.offsetY += (el.offsetTop -
-					el.scrollTop + el.clientTop);
-				el = el.offsetParent;
-			}
-		}
-		
-		function setMousePosition(e) { 
-			// Stack Overflow code
-			let ev = e || window.event; //Moz || IE
-			if (ev.pageX) { //Moz
-				mouse.x = ev.pageX - mouse.offsetX;
-				mouse.y = ev.pageY - mouse.offsetY;
-			} else if (ev.clientX) { //IE
-				mouse.x = ev.clientX +
-					document.body.scrollLeft;
-				mouse.y = ev.clientY +
-					document.body.scrollTop;
-			}
-			//canvas border correction
-			let canvas = Page.getCanvas();
-			if (mouse.x < 0)
-				mouse.x = 0;
-			else if (mouse.x > canvas.clientWidth)
-				mouse.x = canvas.clientWidth;
-			if (mouse.y < 0)
-				mouse.y = 0;
-			else if (mouse.y > canvas.clientHeight)
-				mouse.y = canvas.clientHeight;
-			
-		};
-	
-		function completeDrawing(el){
-			if (el.style.width == '0px' ||
-				el.style.height == '0px' ||
-				el.style.width == ''){
-				Page.removeCanvasElement(el);
-				return;
-			}
-			let com = Element.newComment(
-				parseInt(el.style.left) + 
-				//parseInt(el.style.width) +
-				COMMENT_HORIZONTAL_OFFSET,
-				parseInt(el.style.top) + 
-				parseInt(el.style.height) +
-				COMMENT_VERTICAL_OFFSET, '', el);
-			Page.addCanvasElement(com);
-			addSelectCommentListener(el);
-			let comovers = Memory.getCurrentComOvers();
-			comovers.push(new ComOver(com, el));
-		}
 		
 		function addCanvasDefaultFile(){
 			addEmptyLayer();
@@ -360,7 +322,7 @@ var Main = (function(){
 			return;		
 		Page.initImagePadding();		
 		Page.initCommentInput(
-			(e) => { //keydown
+			(e) => { //onKeydown
 				switch(e.keyCode){
 					case 37: 
 					case 39:
@@ -370,7 +332,7 @@ var Main = (function(){
 					break;
 				}
 			},
-			() => { //input
+			() => { //onInput
 				let comover = Memory.getComOverByOverlay(
 					Page.getSelectedComment());
 				if (comover.notComplete()) return;
@@ -388,46 +350,20 @@ var Main = (function(){
 					Page.getLayerInput());}
 		)
 		Page.initCanvasDiv(
-			(e) => { //onMouseMove
-				updateMouseOffset();
-				setMousePosition(e);
-				let x = e.pageX - mouse.offsetX;
-				let y = e.pageY - mouse.offsetY;
-				Page.fillCoordinatesInfo(
-					'X : ' + mouse.x + ', Y : ' + mouse.y +
-					' (' + e.pageX + ':' + e.pageY + ')');
-				if (drawing === null)
-					return;
-				drawing.style.width = 
-					Math.abs(mouse.x - mouse.startX) + 'px';
-				drawing.style.height = 
-					Math.abs(mouse.y - mouse.startY) + 'px';
-				drawing.style.left = 
-					(mouse.x - mouse.startX < 0) ?
-					mouse.x + 'px' : mouse.startX + 'px';
-				drawing.style.top =
-					(mouse.y - mouse.startY < 0) ?
-					mouse.y + 'px' : mouse.startY + 'px';
+			(e) => {
+				Drawing.canvasOnMouseMove(
+					e, Page.getCanvas(),
+					Page.fillCoordinatesInfo)
 			},
-			(e) => { //onMouseDown
+			(e) => {
 				Page.deselectComment();
-				mouse.startX = mouse.x;
-				mouse.startY = mouse.y;
-				
-				if (drawing !== null)
-					completeDrawing(drawing);
-				drawing = Document.newElement('div');
-				drawing.classList.add('commentOverlayDiv',
-					'canvasOverlayDiv');
-				drawing.style.left = mouse.x + 'px';
-				drawing.style.top = mouse.y + 'px';
-				Page.addCanvasElement(drawing);
+				let newDiv = Drawing
+					.canvasOnMouseDown(e, initOverlay);
+				Page.addCanvasElement(newDiv);
 			},
-			(e) => { //onMouseUp
-				if (drawing !== null){ 
-					completeDrawing(drawing);
-					drawing = null;
-				}
+			(e) => {
+				Drawing.canvasOnMouseUp(e,
+					initOverlay);
 			}
 		)
 	}
@@ -437,8 +373,8 @@ var Main = (function(){
 		Page.initImagePanel();
 		initCanvas();
 		Page.initFileInput(FileUtil.load);
-		Page.fillLanguageSelect(Language.addOptions);
-		Language.update();	
+		Page.fillLanguageSelect(Language.getList());
+		Language.applyCurrent(Page.applyLanguage);
 		if(Memory.getArchive()){
 			saveAndSelectFileAndLayer(
 				Memory.getCurrentFile(),
@@ -462,7 +398,7 @@ var Main = (function(){
 		let template = Template.get(mode);
 		if (template === null)
 			return;
-		Document.setPage(template.content.firstChild);
+		Document.setPage(template);
 		initMode();
 		
 	}

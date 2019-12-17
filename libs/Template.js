@@ -4,7 +4,7 @@ other places keeps its respective licenses.
 All original code is unlicensed (more info
 https://unlicense.org ) */
 
-//uses Document
+//uses Element
 
 var Template = (function(){
 	const templates = {
@@ -157,20 +157,20 @@ var Template = (function(){
 	}
 	
 	function get(mode){	
-		let template = Document.newElement('template');
+		let content;
 		switch(mode){
 			case 'viewer':
-				template.innerHTML = templates.viewerHTML;
+				content = templates.viewerHTML;
 				break;
 			case 'editor':
-				template.innerHTML = templates.editorHTML;
+				content = templates.editorHTML;
 				break;
 			default:
 				console.log('Unknown mode: ', mode);
-				template.innerHTML = '';
 				return null;
 		}
-		return template;
+		return Element.newTemplate(content)
+			.content.firstChild;
 	}
 
 	return {

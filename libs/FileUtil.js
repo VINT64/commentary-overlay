@@ -5,8 +5,8 @@ All original code is unlicensed (more info
 https://unlicense.org ) */
 
 
-//uses Page, Memory, Document, Json, Language, FileSaver,
-//Regexp
+//uses Page, Memory, Json, Language, FileSaver,
+//parseUtil
 //functions from util: 
 
 var FileUtil = (function(){
@@ -20,7 +20,7 @@ var FileUtil = (function(){
 		
 		function getImageSize(index){
 			return new Promise((resolve, reject) => {
-				let image = Document.newElement('img');
+				let image = Element.newImage();
 				let f = new FileReader();
 				f.onerror = reject;
 				f.onload = (e) => {

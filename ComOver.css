@@ -34,7 +34,7 @@ input.numInput {
 }
 
 div.canvasOverlayDiv {
-	cursor: pointer;
+	cursor: move;
 }
 
 div#controlPanel {
@@ -76,6 +76,7 @@ div.commentOverlayDiv {
 div#canvasDiv {
 	display: inline-block;
 	position: absolute;
+	cursor: crosshair;
 }
 div#gallery {
 	white-space: nowrap;

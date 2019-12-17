@@ -68,13 +68,11 @@ var JsonUtil = (function(){
 	}
 	
 	function convertToComOver(jsonComment, overlayFun){
-		let commentOverlay = Document.newElement('div');
-		commentOverlay.style.left = jsonComment.x1 + 'px';
-		commentOverlay.style.top = jsonComment.y1 + 'px';
-		commentOverlay.style.width = (jsonComment.x2 -
-			jsonComment.x1) + 'px';
-		commentOverlay.style.height = (jsonComment.y2 -
-			jsonComment.y1) + 'px';
+		let commentOverlay = Element.newOverlay(
+			jsonComment.x1, jsonComment.y1,
+			jsonComment.x2 - jsonComment.x1,
+			jsonComment.y2 - jsonComment.y1
+		);
 		let comment = Element.newComment(
 			jsonComment.x1 + COMMENT_HORIZONTAL_OFFSET,
 			jsonComment.y2 + COMMENT_VERTICAL_OFFSET,
