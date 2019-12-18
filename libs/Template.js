@@ -127,8 +127,9 @@ var Template = (function(){
 			<label for="commentInput" 
 				id="commentLabel">
 			</label>
-			<input type="text" 
+			<textarea rows=1
 			id="commentInput">
+			</textarea>
 			<button type="button" 
 				id="removeCommentButton" 
 				onclick="

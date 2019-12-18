@@ -67,6 +67,8 @@ div#allCommentsDiv {
 
 div.commentDiv {
 	position: absolute;
+	white-space:pre;
+	text-align: left;
 }
 
 div.commentOverlayDiv {
