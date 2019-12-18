@@ -6,62 +6,83 @@ var Drawing = (function(){
     
 	//copied from 
 	//https://www.w3schools.com/howto/howto_js_draggable.asp
-	function dragElement(elmnt) {
-		var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+	function dragOverlay(com, ov, selectAction, calcComPos) {
+        let latestX = 0, latestY = 0, previousX = 0, previousY = 0;
+        let moved = false;
 			// otherwise, move the DIV from anywhere inside the DIV:
-			elmnt.onmousedown = dragMouseDown;
-		
+			ov.onmousedown = dragMouseDown;
+            ov.onclick = 
+
+
+        function click(e){
+            if (moved) return;
+            selectAction(com, ov);
+        }
 		function dragMouseDown(e) {
+            moved = false;
+            Element.useComOver(com, ov);
 			let ev = e || window.event;
 			ev.stopPropagation();
 			ev.preventDefault();
 			// get the mouse cursor position at startup:
-			pos3 = ev.clientX;
-			pos4 = ev.clientY;
-			elmnt.onmouseup = closeDragElement;
+			previousX = ev.clientX;
+            previousY = ev.clientY;
+            mouse.startX = mouse.x;
+            mouse.startY = mouse.y; 
+			ov.onmouseup = closeDragElement;
+			ov.onmouseleave = closeDragElement;
 			// call a function whenever the cursor moves:
-			elmnt.onmousemove = elementDrag;
+			ov.onmousemove = elementDrag;
 		}
 		
 		function elementDrag(e) {
+            moved = true;
+            Element.useComOver(com, ov);
 			let ev = e || window.event;
 			ev.preventDefault();
 			// calculate the new cursor position:
-			pos1 = pos3 - ev.clientX;
-			pos2 = pos4 - ev.clientY;
-			pos3 = ev.clientX;
-			pos4 = ev.clientY;
+			latestX = previousX - ev.clientX;
+			latestY = previousY - ev.clientY;
+			previousX = ev.clientX;
+            previousY = ev.clientY;
+            let x = ev.pageX - mouse.offsetX;
+            let y = ev.pageY - mouse.offsetY;
 			// set the element's new position:
-			let newPosX = elmnt.offsetLeft - pos1
-			let newPosY = elmnt.offsetTop - pos2
+			let newPosX = ov.offsetLeft - latestX
+			let newPosY = ov.offsetTop - latestY
 
 			let canvas = Page.getCanvas();
 			if (newPosX < 0)
 				newPosX = 0;
 			else if (newPosX >
-				canvas.clientWidth - elmnt.clientWidth)
-					newPosX = canvas.clientWidth - elmnt.clientWidth;
+				canvas.clientWidth - ov.clientWidth)
+					newPosX = canvas.clientWidth - ov.clientWidth;
 			if (newPosY < 0)
 					newPosY = 0;
 			else if (newPosY > 
-					canvas.clientHeight - elmnt.clientHeight)
-						newPosY = canvas.clientHeight - elmnt.clientHeight;
-			console.log(
-				'clientWidth : ' + elmnt.clientWidth
-				+ ', clientHeight : ' + elmnt.clientHeight +
-				' (' + elmnt.style.width + ':' + elmnt.style.height + ')')
+					canvas.clientHeight - ov.clientHeight)
+						newPosY = canvas.clientHeight - ov.clientHeight;
+			// console.log(
+			// 	'clientWidth : ' + elmnt.clientWidth
+			// 	+ ', clientHeight : ' + elmnt.clientHeight +
+			// 	' (' + elmnt.naturalWidth + ':' + elmnt.naturalHeight + ')')
 				
 			//console.log("canvasX: " + canvas.clientWidth + ", canvasY: " + canvas.clientHeight);
 			//console.log("X: " + newPosX + ", Y: " + newPosY 
 //				+ ", width: " + elmnt.style.width + ", height: " + elmnt.style.height);
-			elmnt.style.top = newPosY + "px";
-			elmnt.style.left = newPosX + "px";
+			ov.style.top = newPosY + "px";
+            ov.style.left = newPosX + "px";
+            let pos = calcComPos(ov);
+            com.style.left = pos.x + "px";
+            com.style.top = pos.y + "px";
 		}
 		
-		function closeDragElement() {
-			// stop moving when mouse button is released:
-			elmnt.onmouseup = null;
-			elmnt.onmousemove = null;
+		function closeDragElement(e) {
+            // stop moving when mouse button is released:
+            Element.releaseComOver(com, ov);
+			ov.onmouseup = null;
+			ov.onmousemove = null;
+			ov.onmouseleave = null;
 		}
 	}
 
@@ -150,6 +171,6 @@ var Drawing = (function(){
         canvasOnMouseMove: canvasOnMouseMove,
         canvasOnMouseDown: canvasOnMouseDown,
         canvasOnMouseUp: canvasOnMouseUp,
-        dragElement: dragElement
+        dragOverlay: dragOverlay
     }
 }());

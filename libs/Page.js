@@ -201,6 +201,9 @@ var Page = (function(){
 			if (el)
 				el.textContent = lang[key];
 		}
+		if(page.languageSelect){
+			page.languageSelect.value = lang.id;
+		}
 	}
 
 	function addLayer(name){
@@ -253,7 +256,7 @@ var Page = (function(){
 		image.src = event.target.result;
 		page.imageDiv.appendChild(image);
 		image.addEventListener('load', () => {
-			lockSize(image.clientWidth,	image.clientHeight);
+			lockSize(image.naturalWidth, image.naturalHeight);
 		});
 	};
 	

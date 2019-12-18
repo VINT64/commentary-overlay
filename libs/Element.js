@@ -7,7 +7,11 @@ https://unlicense.org ) */
 //uses Document
 
 var Element = (function(){
-	const COMMENT_STANDARD_Z_INDEX = 64;
+	const COMMENT_STANDARD_Z_INDEX = 75;
+	const COMMENT_USED_Z_INDEX = 750;
+	const OVERLAY_STANDARD_Z_INDEX = 50;
+    const OVERLAY_USED_Z_INDEX = 500;
+        
 	const DISABLED_ATTRIBUTE = 'disabled'
 	
 	function disable(element, flag){
@@ -21,22 +25,22 @@ var Element = (function(){
 	
 	function newComment(x, y, text, commentOverlay){
 		let com = Document.newElement('div');
-		com.style.zIndex = COMMENT_STANDARD_Z_INDEX;
 		com.classList.add('commentDiv');
 		com.style.left = x + 'px';
 		com.style.top = y + 'px';
 		com.appendChild(Document.createText(text));
 		com.style.visibility = 'hidden';
 		commentOverlay.addEventListener('mouseover', 
-			() => {
-				com.style.visibility = 'visible';
-			}
+		() => {
+			com.style.visibility = 'visible';
+		}
 		);
 		commentOverlay.addEventListener('mouseout', 
-			() => {
-				com.style.visibility = 'hidden';
-			}
+		() => {
+			com.style.visibility = 'hidden';
+		}
 		);
+		releaseComment(com);
 		return com;
 	}
 	function newOverlay(x, y, width, height){
@@ -45,7 +49,8 @@ var Element = (function(){
 		overlay.style.top = y + 'px';
 		overlay.style.width = width + 'px';
 		overlay.style.height = height + 'px';
-		overlay.classList.add('commentOverlayDiv');					
+		overlay.classList.add('commentOverlayDiv');
+		releaseOverlay(overlay);				
 		return overlay;
 	}
 	
@@ -64,6 +69,30 @@ var Element = (function(){
 		option.text = text;
 		return option;
 	}
+
+	function useOverlay(overlay){
+		overlay.style.zIndex = OVERLAY_USED_Z_INDEX;
+	}
+	function releaseOverlay(overlay){
+		overlay.style.zIndex = OVERLAY_STANDARD_Z_INDEX;
+	}
+
+	function useComment(comment){
+		comment.style.zIndex = COMMENT_USED_Z_INDEX;
+	}
+	function releaseComment(comment){
+		comment.style.zIndex = COMMENT_STANDARD_Z_INDEX;
+	}
+
+	function useComOver(comment, overlay){
+		useComment(comment);
+		useOverlay(overlay);
+	}
+	function releaseComOver(comment, overlay){
+		releaseComment(comment);
+		releaseOverlay(overlay);
+	}
+
 	// function Comment(x, y, text, commentOverlay){
 	// 	this = Document.newElement('div');
 	// 	this.style.zIndex = COMMENT_STANDARD_Z_INDEX;
@@ -90,7 +119,9 @@ var Element = (function(){
 		newOverlay: newOverlay,
 		newImage: newImage,
 		newTemplate: newTemplate,
-		newOption: newOption
+		newOption: newOption,
+		useComOver: useComOver,
+		releaseComOver: releaseComOver
 	//	Comment: Comment
 	}
 }());

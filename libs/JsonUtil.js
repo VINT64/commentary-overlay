@@ -53,6 +53,7 @@ var JsonUtil = (function(){
 				jsonComs.push(new JsonComment(
 					x, y, x + w, y + h,	text));
 			}
+			jsonComs.reverse();
 			return jsonComs;
 		}
 	
@@ -67,7 +68,7 @@ var JsonUtil = (function(){
 		return ret;
 	}
 	
-	function convertToComOver(jsonComment, overlayFun){
+	function convertToComOver(jsonComment, comOverFun){
 		let commentOverlay = Element.newOverlay(
 			jsonComment.x1, jsonComment.y1,
 			jsonComment.x2 - jsonComment.x1,
@@ -77,7 +78,7 @@ var JsonUtil = (function(){
 			jsonComment.x1 + COMMENT_HORIZONTAL_OFFSET,
 			jsonComment.y2 + COMMENT_VERTICAL_OFFSET,
 			jsonComment.text, commentOverlay);
-		overlayFun(commentOverlay);
+		comOverFun(comment, commentOverlay);
 		return new ComOver(comment, commentOverlay);
 	}
 	

@@ -18,25 +18,23 @@ var Main = (function(){
 			Page.applyLanguage);
 	}	
 
-	function selectComment(el){
-		if (!el)
+	function selectComOver(com, ov){
+		if (!ov)
 			return;
 		Page.deselectComment();
-		let comOver = Memory.getComOverByOverlay(el);
-		if(!comOver)
-			return;
-		let commentText = comOver.getText();
+		let commentText = 
+			new ComOver(com, ov).getText();
 		if (commentText === null) 
 			commentText = '';
-		Page.selectComment(el, commentText);
+		Page.selectComment(ov, commentText);
 	}
 	
 	function removeSelectedComment(){
 
-		function removeComment(el){
-			if (!el) 
+		function removeComment(ov){
+			if (!ov) 
 				return;
-			let comOver = Memory.removeComOverByOverlay(el);
+			let comOver = Memory.removeComOverByOverlay(ov);
 			Page.removeComOver(comOver);
 			Page.deselectComment();
 		}	
@@ -44,15 +42,15 @@ var Main = (function(){
 		removeComment(Page.getSelectedComment());
 	}
 	
-	function addSelectCommentListener(el){
-		// el.onmousedown = (e) => {
+	function addCommentListeners(com, ov){
+		// ov.onmousedown = (e) => {
 		// 	//prevents canvas from starting drawing new overlay
 		// 	e.stopPropagation(); 
 		// };
-		Drawing.dragElement(el);
-		el.onclick = (e) => {
-			selectComment(el);
-		};
+		Drawing.dragOverlay(com, ov, selectComOver, calcComPos);
+		// ov.onclick = (e) => {
+		// 	selectComOver(com, ov);
+		// };
 	}
 	
 	function removeFileLayers(){
@@ -128,12 +126,12 @@ var Main = (function(){
 		function addComment(jsonComment, list){
 			let comOver = JsonUtil
 				.convertToComOver(jsonComment,
-				(overlay) => {
+				(comment, overlay) => {
 					if (Page.isInEditorMode()){
 						overlay.classList
 							.add('canvasOverlayDiv');
-						addSelectCommentListener(
-							overlay);
+						addCommentListeners(
+							comment, overlay);
 					} 
 				}
 			);
@@ -281,27 +279,32 @@ var Main = (function(){
 		Page.clearArchive();
 	}	
 
-	function initOverlay(el){
-		if (el.style.width == '0px' ||
-			el.style.height == '0px' ||
-			el.style.width == ''){
-			Page.removeCanvasElement(el);
+	function calcComPos(ov){
+		return {
+			x: parseInt(ov.style.left, 10) + 
+			//parseInt(ov.style.width, 10) +
+			COMMENT_HORIZONTAL_OFFSET,
+			y: parseInt(ov.style.top, 10) + 
+			parseInt(ov.style.height, 10) +
+			COMMENT_VERTICAL_OFFSET
+		}
+	}
+
+	function initOverlay(ov){
+		if (ov.style.width == '0px' ||
+			ov.style.height == '0px' ||
+			ov.style.width == ''){
+			Page.removeCanvasElement(ov);
 			return;
 		}
-		el.classList.add('canvasOverlayDiv');
-		//el.style.resize = 'both';
-		//el.style.overflow = 'hidden';
+		ov.classList.add('canvasOverlayDiv');
+		let pos = calcComPos(ov);
 		let com = Element.newComment(
-			parseInt(el.style.left, 10) + 
-			//parseInt(el.style.width, 10) +
-			COMMENT_HORIZONTAL_OFFSET,
-			parseInt(el.style.top, 10) + 
-			parseInt(el.style.height, 10) +
-			COMMENT_VERTICAL_OFFSET, '', el);
+			pos.x, pos.y , '', ov);
 		Page.addCanvasElement(com);
-		addSelectCommentListener(el);
+		addCommentListeners(com, ov);
 		let comovers = Memory.getCurrentComOvers();
-		comovers.push(new ComOver(com, el));
+		comovers.push(new ComOver(com, ov));
 	}
 
 	function initCanvas() {
