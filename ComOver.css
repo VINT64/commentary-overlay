@@ -49,6 +49,14 @@ div#gallery {
 	text-align: center; /* can be changed, but why? */
 }
 
+div.handle{
+	background: rgb(0, 120, 215);
+}
+
+div.drawing{
+	border: 1px solid #ff0000;
+	background: rgba(255, 0, 0, 0.2);
+}
 /* you do not touch these parameters */
 
 input#fileInput {
@@ -80,6 +88,16 @@ div#canvasDiv {
 	position: absolute;
 	cursor: crosshair;
 }
+
 div#gallery {
 	white-space: nowrap;
+}
+
+div.handle{
+	position: absolute;
+	/* cursor: se-resize; for now it only distracts*/ 
+}
+
+div.drawing{
+	position: absolute;
 }

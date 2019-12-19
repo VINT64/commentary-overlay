@@ -344,32 +344,3 @@ function Layer(name, list){
 	}
 }
 
-function ComOver(com, over){
-	this.commentDiv = com;
-	this.commentOverlayDiv = over;
-	this.getComment = function(){return this.commentDiv;};
-	this.getOverlay = function(){
-		return this.commentOverlayDiv;
-	};
-	this.notComplete = function(){
-		return !this.commentOverlayDiv || !this.commentDiv;
-	}
-	this.getText = function(){
-		if (!this.commentDiv){
-			console.log('ComOver attempt to get text ' +
-				'while comment div is absent');
-			return null;
-		}
-		return this.commentDiv.textContent;
-	};
-	this.setText = function(text){
-		if (text === null)
-			return;
-		if (!this.commentDiv){
-			console.log('ComOver attempt to set text ' +
-				'while comment div is absent');
-			return;
-		}
-		this.commentDiv.textContent = text;
-	}
-}

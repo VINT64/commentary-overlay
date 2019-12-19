@@ -6,6 +6,10 @@ https://unlicense.org ) */
 
 const DEFAULT_LAYER_NAME = 'default';
 const DEFAULT_IMAGE_NAME = 'default';
+const LEFT_ARROW_KEY = 37;
+const RIGHT_ARROW_KEY = 39;
+const ESCAPE_KEY = 27;
+const DELETE_KEY = 46;
 
 var Main = (function(){
 
@@ -18,12 +22,13 @@ var Main = (function(){
 			Page.applyLanguage);
 	}	
 
-	function selectComOver(com, ov){
+	function selectComOver(comOver){
+		let ov = comOver.getOverlay();
 		if (!ov)
 			return;
 		Page.deselectComment();
 		let commentText = 
-			new ComOver(com, ov).getText();
+			comOver.getText();
 		if (commentText === null) 
 			commentText = '';
 		Page.selectComment(ov, commentText);
@@ -42,12 +47,18 @@ var Main = (function(){
 		removeComment(Page.getSelectedComment());
 	}
 	
-	function addCommentListeners(com, ov){
+	function addCommentListeners(comOver){
+		if(!Page.isInEditorMode())
+			return;
 		// ov.onmousedown = (e) => {
 		// 	//prevents canvas from starting drawing new overlay
 		// 	e.stopPropagation(); 
 		// };
-		Drawing.dragOverlay(com, ov, selectComOver, calcComPos);
+		let canvas = Page.getCanvas();
+		//TODO change sig
+		Drawing.dragOverlay(comOver, selectComOver,
+			canvas.clientWidth, canvas.clientHeight);
+		//Drawing.resizeOverlay(com, ov);
 		// ov.onclick = (e) => {
 		// 	selectComOver(com, ov);
 		// };
@@ -126,14 +137,8 @@ var Main = (function(){
 		function addComment(jsonComment, list){
 			let comOver = JsonUtil
 				.convertToComOver(jsonComment,
-				(comment, overlay) => {
-					if (Page.isInEditorMode()){
-						overlay.classList
-							.add('canvasOverlayDiv');
-						addCommentListeners(
-							comment, overlay);
-					} 
-				}
+					Page.isInEditorMode(),
+					addCommentListeners
 			);
 			list.push(comOver);
 		}
@@ -279,32 +284,21 @@ var Main = (function(){
 		Page.clearArchive();
 	}	
 
-	function calcComPos(ov){
-		return {
-			x: parseInt(ov.style.left, 10) + 
-			//parseInt(ov.style.width, 10) +
-			COMMENT_HORIZONTAL_OFFSET,
-			y: parseInt(ov.style.top, 10) + 
-			parseInt(ov.style.height, 10) +
-			COMMENT_VERTICAL_OFFSET
-		}
-	}
 
-	function initOverlay(ov){
-		if (ov.style.width == '0px' ||
-			ov.style.height == '0px' ||
-			ov.style.width == ''){
-			Page.removeCanvasElement(ov);
+	function initOverlay(dr){
+		Page.removeDrawing(dr);
+		if ( dr.style.width == ''
+			|| dr.style.height == '0px'
+			|| dr.style.width == '0px'
+			){
 			return;
 		}
-		ov.classList.add('canvasOverlayDiv');
-		let pos = calcComPos(ov);
-		let com = Element.newComment(
-			pos.x, pos.y , '', ov);
-		Page.addCanvasElement(com);
-		addCommentListeners(com, ov);
-		let comovers = Memory.getCurrentComOvers();
-		comovers.push(new ComOver(com, ov));
+		let coords = Element.parseCoordinates(dr);
+		let comOver = new ComOver(coords.x,
+			coords.y, coords.w, coords.h,
+			 '', true, addCommentListeners);
+		Memory.getCurrentComOvers().push(comOver);
+		Page.addComOver(comOver);
 	}
 
 	function initCanvas() {
@@ -327,8 +321,8 @@ var Main = (function(){
 		Page.initCommentInput(
 			(e) => { //onKeydown
 				switch(e.keyCode){
-					case 37: 
-					case 39:
+					case LEFT_ARROW_KEY: 
+					case RIGHT_ARROW_KEY:
 					e.stopPropagation();
 					//if propagated, left and right will
 					//change the file
@@ -360,14 +354,15 @@ var Main = (function(){
 			},
 			(e) => {
 				Page.deselectComment();
-				let newDiv = Drawing
-					.canvasOnMouseDown(e, initOverlay);
-				Page.addCanvasElement(newDiv);
+				let dr = Drawing
+					.canvasOnMouseDown(e, Page.removeDrawing);
+				Page.addDrawing(dr);
 			},
 			(e) => {
 				Drawing.canvasOnMouseUp(e,
 					initOverlay);
-			}
+			},
+			(e) => {Drawing.canvasOnMouseLeave(e, initOverlay);}
 		)
 	}
 	
@@ -430,10 +425,10 @@ var Main = (function(){
 
 window.addEventListener('keydown', (e) => {
 	switch(e.keyCode){
-		case 27: Page.deselectComment(); break;
-		case 37: Main.goLeft(); break;
-		case 39: Main.goRight(); break;
-		case 46: 
+		case ESCAPE_KEY: Page.deselectComment(); break;
+		case LEFT_ARROW_KEY: Main.goLeft(); break;
+		case RIGHT_ARROW_KEY: Main.goRight(); break;
+		case DELETE_KEY: 
 			if (Page.isInEditorMode())
 				Main.removeSelectedComment();
 			break;

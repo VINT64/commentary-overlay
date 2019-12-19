@@ -46,12 +46,10 @@ var JsonUtil = (function(){
 				if (!ov || text === null){
 					continue;
 				}
-				let x = parseInt(ov.style.left);
-				let y = parseInt(ov.style.top);
-				let w = parseInt(ov.style.width);
-				let h = parseInt(ov.style.height);
+				let coords = Element.parseCoordinates(ov);
 				jsonComs.push(new JsonComment(
-					x, y, x + w, y + h,	text));
+					coords.x, coords.y, coords.x + coords.w,
+					coords.y + coords.h, text));
 			}
 			jsonComs.reverse();
 			return jsonComs;
@@ -68,18 +66,11 @@ var JsonUtil = (function(){
 		return ret;
 	}
 	
-	function convertToComOver(jsonComment, comOverFun){
-		let commentOverlay = Element.newOverlay(
-			jsonComment.x1, jsonComment.y1,
-			jsonComment.x2 - jsonComment.x1,
-			jsonComment.y2 - jsonComment.y1
-		);
-		let comment = Element.newComment(
-			jsonComment.x1 + COMMENT_HORIZONTAL_OFFSET,
-			jsonComment.y2 + COMMENT_VERTICAL_OFFSET,
-			jsonComment.text, commentOverlay);
-		comOverFun(comment, commentOverlay);
-		return new ComOver(comment, commentOverlay);
+	function convertToComOver(jsonComment, editorMode, listeners){
+		return new ComOver(jsonComment.x1,
+			jsonComment.y1, jsonComment.x2 - jsonComment.x1,
+			jsonComment.y2 - jsonComment.y1, jsonComment.text,
+			editorMode, listeners)
 	}
 	
 	function getFileLayersList(json){

@@ -7,9 +7,6 @@ https://unlicense.org ) */
 
 //uses Document, Element
 
-const COMMENT_VERTICAL_OFFSET = 5;
-const COMMENT_HORIZONTAL_OFFSET = 0;
-
 var Page = (function(){
 	const page = { imageDiv: null,
 		fileInput: null, allCommentsDiv: null,
@@ -58,8 +55,15 @@ var Page = (function(){
 		let overlay = comOver.getOverlay();
 		if (comment)
 			page.canvasDiv.removeChild(comment);
-		if (overlay)
-			page.canvasDiv.removeChild(overlay);	
+		if (!overlay)
+			return;
+		page.canvasDiv.removeChild(overlay);
+		//TODO rewrite with getHandles()
+		if (overlay.nwHandle)
+			page.canvasDiv.removeChild(overlay.nwHandle);
+		if (overlay.seHandle)
+			page.canvasDiv.removeChild(overlay.seHandle);	
+
 	}
 	
 	function addComOver(comOver){
@@ -76,8 +80,15 @@ var Page = (function(){
 		if (isInEditorMode()){
 			if (comment)
 				page.canvasDiv.appendChild(comment);
-			if (overlay)
-				page.canvasDiv.appendChild(overlay);
+			if (!overlay)
+				return;
+			page.canvasDiv.appendChild(overlay);
+		//TODO rewrite with getHandles()
+			if (overlay.nwHandle)
+				page.canvasDiv.appendChild(overlay.nwHandle);
+			if (overlay.seHandle)
+				page.canvasDiv.appendChild(overlay.seHandle);	
+	
 		}
 	}
 	
@@ -269,14 +280,14 @@ var Page = (function(){
 		return page.canvasDiv;
 	}
 	
-	function removeCanvasElement(el){
+	function removeDrawing(dr){
 		if (!page.canvasDiv) return;
-		page.canvasDiv.removeChild(el);
+		page.canvasDiv.removeChild(dr);
 	}
 	
-	function addCanvasElement(el){
-		if (!page.canvasDiv) return;
-		page.canvasDiv.appendChild(el);
+	function addDrawing(dr){
+		if (!page.canvasDiv || !dr) return;
+		page.canvasDiv.appendChild(dr);
 	}
 	
 	function initImagePadding(){
@@ -346,12 +357,13 @@ var Page = (function(){
 	}
 	
 	function initCanvasDiv(onmousemoveFun, onmousedownFun,
-		onmouseupFun){
+		onmouseupFun, onmouseleaveFun){
 		if (!page.canvasDiv)
 			return;
 		page.canvasDiv.onmousemove = onmousemoveFun;
 		page.canvasDiv.onmousedown = onmousedownFun;
 		page.canvasDiv.onmouseup = onmouseupFun;
+		page.canvasDiv.onmouseleave = onmouseleaveFun;
 	}
 	
 	function bind(){
@@ -412,8 +424,8 @@ var Page = (function(){
 		setLayerName: setLayerName,
 		getFile: getFile,
 		getCanvas: getCanvas,
-		removeCanvasElement: removeCanvasElement,
-		addCanvasElement: addCanvasElement,
+		removeDrawing: removeDrawing,
+		addDrawing: addDrawing,
 		initImagePadding: initImagePadding,
 		getCommentInput: getCommentInput,
 		getLayerInput: getLayerInput,

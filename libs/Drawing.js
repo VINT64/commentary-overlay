@@ -6,8 +6,11 @@ var Drawing = (function(){
     
 	//copied from 
 	//https://www.w3schools.com/howto/howto_js_draggable.asp
-	function dragOverlay(com, ov, selectAction, calcComPos) {
-        let latestX = 0, latestY = 0, previousX = 0, previousY = 0;
+    function dragOverlay(comOver, selectAction,
+        canvasW, canvasH) {
+        let ov = comOver.getOverlay();
+        let latestX = 0, latestY = 0,
+            previousX = 0, previousY = 0;
         let moved = false;
 			// otherwise, move the DIV from anywhere inside the DIV:
 			ov.onmousedown = dragMouseDown;
@@ -16,11 +19,11 @@ var Drawing = (function(){
 
         function click(e){
             if (moved) return;
-            selectAction(com, ov);
+            selectAction(comOver);
         }
 		function dragMouseDown(e) {
             moved = false;
-            Element.useComOver(com, ov);
+            comOver.use();
 			let ev = e || window.event;
 			ev.stopPropagation();
 			ev.preventDefault();
@@ -30,14 +33,14 @@ var Drawing = (function(){
             mouse.startX = mouse.x;
             mouse.startY = mouse.y; 
 			ov.onmouseup = closeDragElement;
-			ov.onmouseleave = closeDragElement;
-			// call a function whenever the cursor moves:
-			ov.onmousemove = elementDrag;
+            ov.onmouseleave = closeDragElement;
+            // call a function whenever the cursor moves:
+            ov.onmousemove = elementDrag;
 		}
 		
 		function elementDrag(e) {
             moved = true;
-            Element.useComOver(com, ov);
+            comOver.use();
 			let ev = e || window.event;
 			ev.preventDefault();
 			// calculate the new cursor position:
@@ -51,35 +54,22 @@ var Drawing = (function(){
 			let newPosX = ov.offsetLeft - latestX
 			let newPosY = ov.offsetTop - latestY
 
-			let canvas = Page.getCanvas();
 			if (newPosX < 0)
 				newPosX = 0;
 			else if (newPosX >
-				canvas.clientWidth - ov.clientWidth)
-					newPosX = canvas.clientWidth - ov.clientWidth;
+				canvasW - ov.clientWidth)
+					newPosX = canvasW - ov.clientWidth;
 			if (newPosY < 0)
 					newPosY = 0;
 			else if (newPosY > 
-					canvas.clientHeight - ov.clientHeight)
-						newPosY = canvas.clientHeight - ov.clientHeight;
-			// console.log(
-			// 	'clientWidth : ' + elmnt.clientWidth
-			// 	+ ', clientHeight : ' + elmnt.clientHeight +
-			// 	' (' + elmnt.naturalWidth + ':' + elmnt.naturalHeight + ')')
-				
-			//console.log("canvasX: " + canvas.clientWidth + ", canvasY: " + canvas.clientHeight);
-			//console.log("X: " + newPosX + ", Y: " + newPosY 
-//				+ ", width: " + elmnt.style.width + ", height: " + elmnt.style.height);
-			ov.style.top = newPosY + "px";
-            ov.style.left = newPosX + "px";
-            let pos = calcComPos(ov);
-            com.style.left = pos.x + "px";
-            com.style.top = pos.y + "px";
+                canvasH - ov.clientHeight)
+                        newPosY = canvasH - ov.clientHeight;
+            comOver.move(newPosX, newPosY);
 		}
 		
 		function closeDragElement(e) {
             // stop moving when mouse button is released:
-            Element.releaseComOver(com, ov);
+            comOver.release();
 			ov.onmouseup = null;
 			ov.onmousemove = null;
 			ov.onmouseleave = null;
@@ -150,13 +140,13 @@ var Drawing = (function(){
             mouse.y + 'px' : mouse.startY + 'px';
     }
     
-    function canvasOnMouseDown(e, initOverlay) {
+    function canvasOnMouseDown(e, removeFaulty) {
         mouse.startX = mouse.x;
         mouse.startY = mouse.y;
         
         if (drawing !== null)
-            initOverlay(drawing);
-        drawing = Element.newOverlay(mouse.x, mouse.y, 0,0); 
+            removeFaulty(drawing);
+        drawing = Element.newDrawing(mouse.x, mouse.y, 0,0); 
         return drawing;
     }
 
@@ -167,10 +157,17 @@ var Drawing = (function(){
         }
     }
 
+    function canvasOnMouseLeave(e, initOverlay){
+        if (drawing !== null)
+            initOverlay(drawing);
+        drawing = null;
+    }
+
     return {
         canvasOnMouseMove: canvasOnMouseMove,
         canvasOnMouseDown: canvasOnMouseDown,
         canvasOnMouseUp: canvasOnMouseUp,
+        canvasOnMouseLeave,canvasOnMouseLeave,
         dragOverlay: dragOverlay
     }
 }());
