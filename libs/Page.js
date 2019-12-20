@@ -14,12 +14,11 @@ var Page = (function(){
 		fileInfo: null, canvasDiv: null,
 		coordinatesInfo: null, widthInput: null,
 		heightInput: null, commentInput: null,
-		selectedComment: null, removeCommentButton: null,
+		selectedComOver: null, removeCommentButton: null,
 		saveArchiveButton: null, clearArchiveButton: null,
 		languageSelect: null
 	};
 	
-	const SELECTED_CLASS = 'selected'
 	const IMAGE_ID = 'img';
 	const imageReader = new FileReader();
 	
@@ -39,11 +38,11 @@ var Page = (function(){
 		return !!page.allCommentsDiv;
 	}
 	
-	function deselectComment(){
-		if(page.selectedComment){
-			page.selectedComment.classList.remove(SELECTED_CLASS);
+	function deselectComOver(){
+		if(page.selectedComOver){
+			page.selectedComOver.select(false);
 		}
-		page.selectedComment = null;
+		page.selectedComOver = null;
 		Element.disable(page.commentInput, true);
 		Element.disable(page.removeCommentButton, true);
 	}
@@ -51,17 +50,19 @@ var Page = (function(){
 	function removeComOver(comOver){
 		if(!isInEditorMode() || !comOver)
 			return;
-		let comment = comOver.getComment();
-		let overlay = comOver.getOverlay();
-		if(comment)
-			page.canvasDiv.removeChild(comment);
-		if(!overlay)
-			return;
-		page.canvasDiv.removeChild(overlay);
+		page.canvasDiv.removeChild(
+			comOver.getComment());
+		page.canvasDiv.removeChild(
+			comOver.getOverlay());
 		let handles = comOver.getHandles();
 		for(let handle of handles){
 			page.canvasDiv.removeChild(handle);
 		}
+	}
+
+	function removeSelectedComOver(){
+		removeComOver(page.selectedComOver);
+		deselectComOver();
 	}
 	
 	function addComOver(comOver){
@@ -88,12 +89,14 @@ var Page = (function(){
 		}
 	}
 	
-	function getSelectedComment(){
-		return page.selectedComment;
+	function getSelectedComOver(){
+		return page.selectedComOver;
 	}
 	
-	function selectComment(comment, text){
-		comment.classList.add(SELECTED_CLASS);
+	function selectComOver(comOver, text){
+		if(page.selectedComOver){
+			page.selectedComOver.select(false);
+		}
 		page.commentInput.value = text ? text : '';
 		Element.disable(page.removeCommentButton,
 			false);
@@ -101,7 +104,8 @@ var Page = (function(){
 		if(page.commentInput){
 			page.commentInput.focus();
 		}
-		page.selectedComment = comment;
+		comOver.select(true);
+		page.selectedComOver = comOver;
 	}
 	
 	function selectLayer(name, index){
@@ -129,7 +133,7 @@ var Page = (function(){
 			page.coordinatesInfo.textContent = text;
 	}	
 	
-	function clearComments(){
+	function clearGallery(){
 		if(page.allCommentsDiv){
 			while (page.allCommentsDiv.firstChild) {
 				page.allCommentsDiv.removeChild(
@@ -141,7 +145,7 @@ var Page = (function(){
 				page.canvasDiv.removeChild(
 					page.canvasDiv.firstChild);
 			}
-			deselectComment();
+			deselectComOver();
 		}
 	}
 	
@@ -184,17 +188,15 @@ var Page = (function(){
 	}
 	
 	function clearLayersSelect(){
-		if(!page.layerSelect) return;
-		for(let i = page.layerSelect.options.length - 1;
-			i >= 0; i--)
-			page.layerSelect.remove(i);
+		Element.clearSelect(page.layerSelect);
 	}
 	
 	function clearCanvas(){
 		if(!isInEditorMode() ||
 			!confirm(Language.getPhrase(
-			'removeAllCommentsFromLayerConfirm'))) return;
-		clearComments();
+			'removeAllCommentsFromLayerConfirm')))
+			return;
+		clearGallery();
 	}	
 
 	function getLanguage(){
@@ -255,12 +257,12 @@ var Page = (function(){
 		}
 	
 		clearImage();
-		let image = Element.newImage();
+		let image = Element.newImage(event.target.result);
 		image.id = IMAGE_ID;
-		image.src = event.target.result;
 		page.imageDiv.appendChild(image);
 		image.addEventListener('load', () => {
-			lockSize(image.naturalWidth, image.naturalHeight);
+			lockSize(image.naturalWidth,
+				image.naturalHeight);
 		});
 	};
 	
@@ -376,7 +378,8 @@ var Page = (function(){
 	
 	function initFileInput(onchangeFun){
 		if(!page.fileInput) return;
-		page.fileInput.addEventListener('change', onchangeFun);
+		page.fileInput
+			.addEventListener('change', onchangeFun);
 	}
 	
 	function fillLanguageSelect(list){
@@ -394,16 +397,16 @@ var Page = (function(){
 	return {
 		clear: clear,
 		isInEditorMode: isInEditorMode,
-		deselectComment,
-		removeComOver: removeComOver,
+		deselectComOver,
+		removeSelectedComOver: removeSelectedComOver,
 		addComOver: addComOver,
-		getSelectedComment: getSelectedComment,
-		selectComment: selectComment,
+		getSelectedComOver: getSelectedComOver,
+		selectComOver: selectComOver,
 		selectLayer: selectLayer,
 		triggerFileInput: triggerFileInput,
 		fillFileInfo: fillFileInfo,
 		fillCoordinatesInfo: fillCoordinatesInfo,
-		clearComments: clearComments,
+		clearGallery: clearGallery,
 		clearImage: clearImage,
 		disableArchiveButtons: disableArchiveButtons,
 		clearArchive: clearArchive,

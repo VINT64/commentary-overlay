@@ -24,6 +24,11 @@ div.selected {
 	background: rgba(0, 120, 215, 0.5);
 }
 
+div.moving {
+	border: 1px solid #00ff00;
+	background: rgba(0, 128, 0, 0.5);
+}
+
 div#canvasDiv {
 	background: transparent;
 	border: 5px solid #000;

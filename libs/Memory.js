@@ -188,34 +188,19 @@ var Memory = (function(){
 		return getLayerComOvers(memory.currentLayer);
 	}
 	
-	/* Searches comOver by overlay div on current layer 
-		with removal, if del is true
-	*/
-	function getComOverWithDel(overlay, del){
-		if(overlay === null)
-			return null;
+	function removeComOver(comOver){
+		if (!comOver) return null;
 		let comovers = getCurrentComOvers();
 		if(comovers === null)
 			return null;
 		for(let i = comovers.length - 1; i >= 0; i--)
-			if(comovers[i].commentOverlayDiv === overlay){
-				let ret = comovers[i];
-				if(del)
-					comovers.splice(i, 1);
-				return ret;
+			if(comovers[i] == comOver){
+				comovers.splice(i, 1);
+				return comOver;
 			}
 		return null;
 	}
-	
-	//should return null if overlay equals null
-	function getComOverByOverlay(overlay){
-		return getComOverWithDel(overlay, false);
-	}
-	
-	function removeComOverByOverlay(overlay){
-		return getComOverWithDel(overlay, true);
-	}
-	
+
 	function RewriteCommentFile(i, body){
 		
 		function generateMemoryCommentFileName(i){
@@ -315,8 +300,7 @@ var Memory = (function(){
 		setLayerName: setLayerName,
 		getCurrentLayerName: getCurrentLayerName,
 		getCurrentComOvers: getCurrentComOvers,
-		getComOverByOverlay: getComOverByOverlay,
-		removeComOverByOverlay: removeComOverByOverlay,
+		removeComOver: removeComOver,
 		RewriteCommentFile: RewriteCommentFile,
 		TruncateCommentFiles: TruncateCommentFiles,
 		initForSingleImage: initForSingleImage,

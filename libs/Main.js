@@ -23,28 +23,15 @@ var Main = (function(){
 	}	
 
 	function selectComOver(comOver){
-		let ov = comOver.getOverlay();
-		if(!ov)
-			return;
-		Page.deselectComment();
 		let commentText = 
 			comOver.getText();
 		if(commentText === null) 
 			commentText = '';
-		Page.selectComment(ov, commentText);
+		Page.selectComOver(comOver, commentText);
 	}
 	
 	function removeSelectedComment(){
-
-		function removeComment(ov){
-			if(!ov) 
-				return;
-			let comOver = Memory.removeComOverByOverlay(ov);
-			Page.removeComOver(comOver);
-			Page.deselectComment();
-		}	
-	
-		removeComment(Page.getSelectedComment());
+		Page.removeSelectedComOver();
 	}
 	
 	function addCommentListeners(comOver){
@@ -54,10 +41,8 @@ var Main = (function(){
 		// 	//prevents canvas from starting drawing new overlay
 		// 	e.stopPropagation(); 
 		// };
-		let canvas = Page.getCanvas();
 		//TODO change sig
-		Drawing.dragOverlay(comOver, selectComOver,
-			canvas.clientWidth, canvas.clientHeight);
+		Drawing.dragOverlay(comOver, selectComOver);
 		//Drawing.resizeOverlay(com, ov);
 		// ov.onclick = (e) => {
 		// 	selectComOver(com, ov);
@@ -91,8 +76,8 @@ var Main = (function(){
 			console.log('Failed to select layer: ' + i);
 			return;
 		}
-		Page.deselectComment();
-		Page.clearComments();
+		Page.deselectComOver();
+		Page.clearGallery();
 		
 		let comovers = Memory.getCurrentComOvers(); // i
 		comovers.forEach(comOver => {
@@ -330,9 +315,7 @@ var Main = (function(){
 				}
 			},
 			() => { //onInput
-				let comover = Memory.getComOverByOverlay(
-					Page.getSelectedComment());
-				if(comover.notComplete()) return;
+				let comover = Page.getSelectedComOver();
 				comover.setText(Page.getCommentInput());
 			}
 		);			
@@ -353,7 +336,7 @@ var Main = (function(){
 					Page.fillCoordinatesInfo)
 			},
 			(e) => {
-				Page.deselectComment();
+				Page.deselectComOver();
 				let dr = Drawing
 					.canvasOnMouseDown(e, Page.removeDrawing);
 				Page.addDrawing(dr);
@@ -425,7 +408,7 @@ var Main = (function(){
 
 window.addEventListener('keydown', (e) => {
 	switch(e.keyCode){
-		case ESCAPE_KEY: Page.deselectComment(); break;
+		case ESCAPE_KEY: Page.deselectComOver(); break;
 		case LEFT_ARROW_KEY: Main.goLeft(); break;
 		case RIGHT_ARROW_KEY: Main.goRight(); break;
 		case DELETE_KEY: 

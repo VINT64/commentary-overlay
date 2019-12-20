@@ -14,23 +14,24 @@ var FileUtil = (function(){
 	
 		function clean(){ 
 			Page.clearImage();
-			Page.clearComments();
+			Page.clearGallery();
 			Main.removeFileLayers();
 		}
 		
 		function getImageSize(index){
 			return new Promise((resolve, reject) => {
-				let image = Element.newImage();
 				let f = new FileReader();
 				f.onerror = reject;
 				f.onload = (e) => {
+					let image = Element.newImage(
+						e.target.result);
 					image.onerror = reject;
 					image.onload = () => 
 						resolve({w: image.naturalWidth,
 							h: image.naturalHeight});
-					image.src = e.target.result;
 				}
-				let imageName = Memory.getFullImageName(index);
+				let imageName =
+					Memory.getFullImageName(index);
 				if(imageName === null){
 					reject('Image name not retrieved');
 				}
@@ -45,10 +46,10 @@ var FileUtil = (function(){
 		async function addDefaultJsonFileToArchive(index){
 			let size = await getImageSize(index);
 			let imageName = Memory.getImageNameNoPath(index);
-			let defaultLayer = new JsonLayer(DEFAULT_LAYER_NAME,
-				[]);
-			let body = JSON.stringify(new JsonFile1(imageName,
-				size.w, size.h, [defaultLayer]));
+			let defaultLayer = 
+				new JsonLayer(DEFAULT_LAYER_NAME, []);
+			let body = JSON.stringify(new JsonFile1(
+				imageName, size.w, size.h, [defaultLayer]));
 			
 			Memory.RewriteCommentFile(index, body);
 		}
@@ -77,8 +78,8 @@ var FileUtil = (function(){
 					imageName,
 					e.target.result,
 					{binary: true});
-					finishLoading()
-						.then(() => Main.selectAfterLoading());
+					finishLoading().then(
+						() => Main.selectAfterLoading());
 			}
 			singleImageReader.readAsBinaryString(f);
 			return;
@@ -89,7 +90,8 @@ var FileUtil = (function(){
 			let tempImages = [];
 			let tempJsons = [];
 			z.forEach(function (relativePath, zipEntry) {
-				let ext = ParseUtil.getExtension(relativePath);
+				let ext = 
+					ParseUtil.getExtension(relativePath);
 				if( ext == 'png' || ext == 'jpg' ||
 					ext == 'jpeg' || ext == 'gif')
 					tempImages.push(relativePath);
@@ -111,7 +113,8 @@ var FileUtil = (function(){
 				Main.selectAfterLoading());
 		},
 		(e) => {
-			alert(Language.getPhrase('notImageOrArchiveAlert'));
+			alert(Language.getPhrase(
+				'notImageOrArchiveAlert'));
 			console.log(e.message);
 		});
 	}

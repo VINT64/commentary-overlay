@@ -3,76 +3,48 @@ var Drawing = (function(){
     let mouse = { x: 0, y: 0, startX: 0,
         startY: 0, offsetX: 0, offsetY: 0};
     let drawing = null;
-    
+    let moving = { comOver: null, moved: false, w: 0, h: 0};
+    //copied from 
 	//copied from 
+    //copied from 
+	//copied from 
+    //copied from 
+	//copied from 
+    //copied from 
 	//https://www.w3schools.com/howto/howto_js_draggable.asp
-    function dragOverlay(comOver, selectAction,
-        canvasW, canvasH) {
+    function dragOverlay(comOver, selectComOver) {
         let ov = comOver.getOverlay();
-        let latestX = 0, latestY = 0,
-            previousX = 0, previousY = 0;
-        let moved = false;
-			// otherwise, move the DIV from anywhere inside the DIV:
-			ov.onmousedown = dragMouseDown;
-            ov.onclick = 
-
-
+        ov.onmousedown = dragMouseDown;
+        ov.onclick = click;
+        
         function click(e){
-            if(moved) return;
-            selectAction(comOver);
+            if(moving.moved){
+                moving.moved = false;
+                return;
+            }
+            selectComOver(comOver);
         }
 		function dragMouseDown(e) {
-            moved = false;
-            comOver.use();
+            moving.comOver = comOver;
+            moving.moved = false;
+            comOver.moving();
 			let ev = e || window.event;
 			ev.stopPropagation();
 			ev.preventDefault();
-			// get the mouse cursor position at startup:
-			previousX = ev.clientX;
-            previousY = ev.clientY;
-            mouse.startX = mouse.x;
-            mouse.startY = mouse.y; 
+            // get the mouse cursor position at startup:
+            let coords = Element.parseCoordinates(ov);
+            mouse.startX = mouse.x - coords.x;
+            mouse.startY = mouse.y - coords.y;
+            moving.w = coords.w;
+            moving.h = coords.h;
 			ov.onmouseup = closeDragElement;
-            ov.onmouseleave = closeDragElement;
-            // call a function whenever the cursor moves:
-            ov.onmousemove = elementDrag;
-		}
-		
-		function elementDrag(e) {
-            moved = true;
-            comOver.use();
-			let ev = e || window.event;
-			ev.preventDefault();
-			// calculate the new cursor position:
-			latestX = previousX - ev.clientX;
-			latestY = previousY - ev.clientY;
-			previousX = ev.clientX;
-            previousY = ev.clientY;
-            let x = ev.pageX - mouse.offsetX;
-            let y = ev.pageY - mouse.offsetY;
-			// set the element's new position:
-			let newPosX = ov.offsetLeft - latestX
-			let newPosY = ov.offsetTop - latestY
-
-			if(newPosX < 0)
-				newPosX = 0;
-			else if(newPosX >
-				canvasW - ov.clientWidth)
-					newPosX = canvasW - ov.clientWidth;
-			if(newPosY < 0)
-					newPosY = 0;
-			else if(newPosY > 
-                canvasH - ov.clientHeight)
-                        newPosY = canvasH - ov.clientHeight;
-            comOver.move(newPosX, newPosY);
-		}
+		}	
 		
 		function closeDragElement(e) {
             // stop moving when mouse button is released:
+            moving.comOver = null;
             comOver.release();
 			ov.onmouseup = null;
-			ov.onmousemove = null;
-			ov.onmouseleave = null;
 		}
 	}
 
@@ -90,16 +62,17 @@ var Drawing = (function(){
         }
     }
     
-    function keepInBorders(mouse, canvas){
-        if(mouse.x < 0)
-            mouse.x = 0;
-        else if(mouse.x > canvas.clientWidth)
-            mouse.x = canvas.clientWidth;
-        if(mouse.y < 0)
-            mouse.y = 0;
-        else if(mouse.y > canvas.clientHeight)
-            mouse.y = canvas.clientHeight;
-    }
+    function keepInBorders(cursor, canvas,
+        rightOffset, downOffset){
+        if(cursor.x < 0)
+            cursor.x = 0;
+        else if(cursor.x > canvas.clientWidth - rightOffset)
+            cursor.x = canvas.clientWidth - rightOffset;
+        if(cursor.y < 0)
+            cursor.y = 0;
+        else if(cursor.y > canvas.clientHeight - downOffset)
+            cursor.y = canvas.clientHeight - downOffset;
+   }
 
     function setMousePosition(e, canvas) { 
         // Stack Overflow code
@@ -113,9 +86,8 @@ var Drawing = (function(){
             mouse.y = ev.clientY +
                 document.body.scrollTop;
         }
-        
         //canvas border correction
-        keepInBorders(mouse, canvas);
+        keepInBorders(mouse, canvas, 0, 0);
     };
 
     function canvasOnMouseMove(e, canvas, showOnPage){
@@ -126,18 +98,25 @@ var Drawing = (function(){
         showOnPage(
             'X : ' + mouse.x + ', Y : ' + mouse.y +
             ' (' + e.pageX + ':' + e.pageY + ')');
-        if(drawing === null)
-            return;
-        drawing.style.width = 
-            Math.abs(mouse.x - mouse.startX) + 'px';
-        drawing.style.height = 
-            Math.abs(mouse.y - mouse.startY) + 'px';
-        drawing.style.left = 
-            (mouse.x - mouse.startX < 0) ?
-            mouse.x + 'px' : mouse.startX + 'px';
-        drawing.style.top =
-            (mouse.y - mouse.startY < 0) ?
-            mouse.y + 'px' : mouse.startY + 'px';
+        if(drawing){
+            drawing.style.width = 
+                Math.abs(mouse.x - mouse.startX) + 'px';
+            drawing.style.height = 
+                Math.abs(mouse.y - mouse.startY) + 'px';
+            drawing.style.left = 
+               (mouse.x - mouse.startX < 0) ?
+                mouse.x + 'px' : mouse.startX + 'px';
+            drawing.style.top =
+                (mouse.y - mouse.startY < 0) ?
+                mouse.y + 'px' : mouse.startY + 'px';
+        }
+        if(moving.comOver){ 
+            moving.moved = true;
+            let newPos = { x: mouse.x - mouse.startX,
+                y: mouse.y - mouse.startY};
+            keepInBorders(newPos, canvas, moving.w, moving.h);
+			moving.comOver.move(newPos.x, newPos.y);
+        }
     }
     
     function canvasOnMouseDown(e, removeFaulty) {

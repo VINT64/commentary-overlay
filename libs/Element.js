@@ -10,6 +10,14 @@ var Element = (function(){
     const DRAWING_Z_INDEX = 500;
 	const DISABLED_ATTRIBUTE = 'disabled'
 	
+	function toggleClass(element, cl, flag){
+		if(!element) return;
+		if(flag)
+			element.classList.add(cl);
+		else
+			element.classList.remove(cl);
+	}
+
 	function disable(element, flag){
 		if(!element) return;
 		if(flag)
@@ -31,8 +39,10 @@ var Element = (function(){
 		return drawing;
 	}
 
-	function newImage(){
-		return Document.newElement('img');
+	function newImage(src){
+		let img = Document.newElement('img');
+		img.src = src;
+		return img;
 	}
 	
 	function newTemplate(content){
@@ -56,12 +66,21 @@ var Element = (function(){
 		}
 	}
 
+	function clearSelect(select){
+		if(!select) return;
+		for(let i = select.options.length - 1;
+			i >= 0; i--)
+			select.remove(i);
+	}
+
 	return {
+		toggleClass: toggleClass,
 		disable: disable,
 		newDrawing: newDrawing,
 		newImage: newImage,
 		newTemplate: newTemplate,
 		newOption: newOption,
-		parseCoordinates: parseCoordinates
+		parseCoordinates: parseCoordinates,
+		clearSelect: clearSelect
 	}
 }());
