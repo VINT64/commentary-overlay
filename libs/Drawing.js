@@ -18,7 +18,7 @@ var Drawing = (function(){
 
 
         function click(e){
-            if (moved) return;
+            if(moved) return;
             selectAction(comOver);
         }
 		function dragMouseDown(e) {
@@ -54,14 +54,14 @@ var Drawing = (function(){
 			let newPosX = ov.offsetLeft - latestX
 			let newPosY = ov.offsetTop - latestY
 
-			if (newPosX < 0)
+			if(newPosX < 0)
 				newPosX = 0;
-			else if (newPosX >
+			else if(newPosX >
 				canvasW - ov.clientWidth)
 					newPosX = canvasW - ov.clientWidth;
-			if (newPosY < 0)
+			if(newPosY < 0)
 					newPosY = 0;
-			else if (newPosY > 
+			else if(newPosY > 
                 canvasH - ov.clientHeight)
                         newPosY = canvasH - ov.clientHeight;
             comOver.move(newPosX, newPosY);
@@ -91,23 +91,23 @@ var Drawing = (function(){
     }
     
     function keepInBorders(mouse, canvas){
-        if (mouse.x < 0)
+        if(mouse.x < 0)
             mouse.x = 0;
-        else if (mouse.x > canvas.clientWidth)
+        else if(mouse.x > canvas.clientWidth)
             mouse.x = canvas.clientWidth;
-        if (mouse.y < 0)
+        if(mouse.y < 0)
             mouse.y = 0;
-        else if (mouse.y > canvas.clientHeight)
+        else if(mouse.y > canvas.clientHeight)
             mouse.y = canvas.clientHeight;
     }
 
     function setMousePosition(e, canvas) { 
         // Stack Overflow code
         let ev = e || window.event; //Moz || IE
-        if (ev.pageX) { //Moz
+        if(ev.pageX) { //Moz
             mouse.x = ev.pageX - mouse.offsetX;
             mouse.y = ev.pageY - mouse.offsetY;
-        } else if (ev.clientX) { //IE
+        } else if(ev.clientX) { //IE
             mouse.x = ev.clientX +
                 document.body.scrollLeft;
             mouse.y = ev.clientY +
@@ -126,7 +126,7 @@ var Drawing = (function(){
         showOnPage(
             'X : ' + mouse.x + ', Y : ' + mouse.y +
             ' (' + e.pageX + ':' + e.pageY + ')');
-        if (drawing === null)
+        if(drawing === null)
             return;
         drawing.style.width = 
             Math.abs(mouse.x - mouse.startX) + 'px';
@@ -144,21 +144,21 @@ var Drawing = (function(){
         mouse.startX = mouse.x;
         mouse.startY = mouse.y;
         
-        if (drawing !== null)
+        if(drawing !== null)
             removeFaulty(drawing);
         drawing = Element.newDrawing(mouse.x, mouse.y, 0,0); 
         return drawing;
     }
 
     function canvasOnMouseUp(e, initOverlay) {
-        if (drawing !== null){ 
+        if(drawing !== null){ 
             initOverlay(drawing);
             drawing = null;
         }
     }
 
     function canvasOnMouseLeave(e, initOverlay){
-        if (drawing !== null)
+        if(drawing !== null)
             initOverlay(drawing);
         drawing = null;
     }

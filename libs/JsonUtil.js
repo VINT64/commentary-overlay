@@ -36,14 +36,13 @@ var JsonUtil = (function(){
 		
 		function convertComOversList(comovers){
 			let jsonComs = [];
-			for(let i = comovers.length - 1; i >= 0; i--){
-				let comOver = comovers[i];
-				if (comOver.notComplete()){
+			for(let comOver of comovers){
+				if(comOver.notComplete()){
 					continue;
 				}
 				let ov = comOver.getOverlay();
 				let text = comOver.getText();
-				if (!ov || text === null){
+				if(!ov || text === null){
 					continue;
 				}
 				let coords = Element.parseCoordinates(ov);
@@ -51,16 +50,14 @@ var JsonUtil = (function(){
 					coords.x, coords.y, coords.x + coords.w,
 					coords.y + coords.h, text));
 			}
-			jsonComs.reverse();
 			return jsonComs;
 		}
 	
 		let ret = [];
-		let l = layers.length;
-		for (let i = 0; i < l; i++){
+		for(let layer of layers){
 			let jsonComs = convertComOversList(
-				layers[i].getComOversList());
-			ret.push(new JsonLayer(layers[i].getName(),
+				layer.getComOversList());
+			ret.push(new JsonLayer(layer.getName(),
 				 jsonComs));
 		}
 		return ret;

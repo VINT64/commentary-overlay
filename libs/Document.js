@@ -29,12 +29,18 @@ var Document = (function(){
 	function setPage(el){
 		document.body.appendChild(el);
 	}
+	function setText(id, text){
+		let el = getElement(id);
+		if(el)
+			el.textContent = text;
+	}
 
 	return {
 		getElement: getElement,
 		newElement: newElement,
 		clear: clear,
 		createText: createText,
-		setPage: setPage
+		setPage: setPage,
+		setText: setText
 	}
 }());

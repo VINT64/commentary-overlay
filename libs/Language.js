@@ -100,7 +100,7 @@ var Language = (function(){
 	}
 
 	function init(){
-		if (currentLanguage == '')
+		if(currentLanguage == '')
 			currentLanguage = 'en';
 	}
 	

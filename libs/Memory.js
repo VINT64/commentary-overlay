@@ -54,7 +54,7 @@ var Memory = (function(){
 	}
 	
 	function removeLayer(i){
-		if (i < 0){
+		if(i < 0){
 			console.log('negative layer number is not ' +
 			'allowed in removeLayer');
 			return false;
@@ -72,7 +72,7 @@ var Memory = (function(){
 	}
 	
 	function setCurrentLayer(i){
-		if (i < 0 || i >= memory.openLayers.length){
+		if(i < 0 || i >= memory.openLayers.length){
 			console.log(
 				'Bad param for setCurrentLayer: ' + i);
 				return false;
@@ -97,7 +97,7 @@ var Memory = (function(){
 	}
 	
 	function setCurrentFile(i){
-		if (i < 0 || i >= memory.filenames.images.length){
+		if(i < 0 || i >= memory.filenames.images.length){
 			console.log(
 				'Bad param for setCurrentFile: ' + i);
 				return false;
@@ -109,7 +109,7 @@ var Memory = (function(){
 	}
 	
 	function getFullImageName(i){
-		if (i < 0 || i >= memory.filenames.images.length){
+		if(i < 0 || i >= memory.filenames.images.length){
 			console.log(
 				'Bad param for getFullImageName: ' + i);
 			return null;
@@ -119,7 +119,7 @@ var Memory = (function(){
 	
 	function getImageNameNoPath(i){
 		let imageFullName = getFullImageName(i);
-		if (imageFullName === null){
+		if(imageFullName === null){
 			return null;
 		}
 		let path = ParseUtil.getPath(imageFullName);
@@ -128,7 +128,7 @@ var Memory = (function(){
 	}
 	
 	function getFullCommentFileName(i){
-		if (i < 0 || i >= memory.filenames.jsonfiles.length){
+		if(i < 0 || i >= memory.filenames.jsonfiles.length){
 			console.log(
 				'Bad param for getFullCommentFileName: ' + i);
 			return null;
@@ -157,7 +157,7 @@ var Memory = (function(){
 	}
 	
 	function getLayer(i){
-		if (i < 0 || i >= memory.openLayers.length){
+		if(i < 0 || i >= memory.openLayers.length){
 			console.log(
 				'Bad param for getLayer: ' + i);
 			return null;
@@ -175,7 +175,7 @@ var Memory = (function(){
 	
 	function setLayerName(i, name){
 		let layer = getLayer(i);
-		if (layer === null)
+		if(layer === null)
 			return false;
 		return layer.setName(name);
 	}
@@ -192,15 +192,15 @@ var Memory = (function(){
 		with removal, if del is true
 	*/
 	function getComOverWithDel(overlay, del){
-		if (overlay === null)
+		if(overlay === null)
 			return null;
 		let comovers = getCurrentComOvers();
-		if (comovers === null)
+		if(comovers === null)
 			return null;
 		for(let i = comovers.length - 1; i >= 0; i--)
-			if (comovers[i].commentOverlayDiv === overlay){
+			if(comovers[i].commentOverlayDiv === overlay){
 				let ret = comovers[i];
-				if (del)
+				if(del)
 					comovers.splice(i, 1);
 				return ret;
 			}
@@ -220,22 +220,22 @@ var Memory = (function(){
 		
 		function generateMemoryCommentFileName(i){
 			let imageFullName = getFullImageName(i);
-			if (imageFullName === null)
+			if(imageFullName === null)
 				return null;
 			let ext = ParseUtil.getExtension(imageFullName);
 			return (ext === undefined) ? imageFullName :
 				imageFullName.replace(ext, 'json');
 		}
 			
-		if (i < 0 || i >= memory.filenames.images.length){
+		if(i < 0 || i >= memory.filenames.images.length){
 			console.log(
 				'Bad param for RewriteCommentFile: ' + i);
 			return false;
 		}
 		let filename = memory.filenames.jsonfiles[i];
-		if (filename === undefined || filename === null)
+		if(filename === undefined || filename === null)
 			filename = generateMemoryCommentFileName(i);
-		if (filename === null){
+		if(filename === null){
 			console.log('RewriteCommentFile failed: ' +
 				'image name is null. Index in question: ' + i);
 			return false;
@@ -246,8 +246,8 @@ var Memory = (function(){
 	}
 	
 	function TruncateCommentFiles(i){
-		if (i >= 0 && i < memory.filenames.jsonfiles.length){
-			if (i < memory.filenames.images.length)
+		if(i >= 0 && i < memory.filenames.jsonfiles.length){
+			if(i < memory.filenames.images.length)
 				console.log('Warning, ' +
 					'TruncateCommentFilesList may cut out ' +
 					'too much. Images: ' +
@@ -274,17 +274,16 @@ var Memory = (function(){
 	}
 	
 	function dumpMemoryFiles(){
-		for (let i = 0; i < memory.filenames.images.length; i++)
-			console.log(memory.filenames.images[i]);
-		for (let i = 0; i < memory.filenames.jsonfiles.length;
-			i++)
-			console.log(memory.filenames.jsonfiles[i]);
+		for(let imageName of memory.filenames.images)
+			console.log(imageName);
+		for(let jsonName of memory.filenames.jsonfiles)
+			console.log(jsonName);
 	}
 	
 	function removeDefaultLayer(){
-		//if (!confirm(Language.getPhrase(
+		//if(!confirm(Language.getPhrase(
 			//'LoseDefaultLayerConfirm'))) return;
-		if (!memory.archive && memory.openLayers.length == 1){
+		if(!memory.archive && memory.openLayers.length == 1){
 			memory.openLayers = [];
 		}
 	
@@ -337,7 +336,7 @@ function Layer(name, list){
 		this.comovers = [];
 	};
 	this.setName = function(n){
-		if (typeof n !== 'string')
+		if(typeof n !== 'string')
 			return false;
 		this.name = n;
 		return true;

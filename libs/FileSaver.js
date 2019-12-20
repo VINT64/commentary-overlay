@@ -16,7 +16,7 @@
 var saveAs = saveAs || (function(view) {
 	"use strict";
 	// IE <10 is explicitly unsupported
-	if (typeof view === "undefined" || typeof navigator !== "undefined" && /MSIE [1-9]\./.test(navigator.userAgent)) {
+	if(typeof view === "undefined" || typeof navigator !== "undefined" && /MSIE [1-9]\./.test(navigator.userAgent)) {
 		return;
 	}
 	var
@@ -44,7 +44,7 @@ var saveAs = saveAs || (function(view) {
 		, arbitrary_revoke_timeout = 1000 * 40 // in ms
 		, revoke = function(file) {
 			var revoker = function() {
-				if (typeof file === "string") { // file is an object URL
+				if(typeof file === "string") { // file is an object URL
 					get_URL().revokeObjectURL(file);
 				} else { // file is a File
 					file.remove();
@@ -57,7 +57,7 @@ var saveAs = saveAs || (function(view) {
 			var i = event_types.length;
 			while (i--) {
 				var listener = filesaver["on" + event_types[i]];
-				if (typeof listener === "function") {
+				if(typeof listener === "function") {
 					try {
 						listener.call(filesaver, event || filesaver);
 					} catch (ex) {
@@ -69,13 +69,13 @@ var saveAs = saveAs || (function(view) {
 		, auto_bom = function(blob) {
 			// prepend BOM for UTF-8 XML and text/* types (including HTML)
 			// note: your browser will automatically convert UTF-16 U+FEFF to EF BB BF
-			if (/^\s*(?:text\/\S*|application\/xml|\S*\/\S*\+xml)\s*;.*charset\s*=\s*utf-8/i.test(blob.type)) {
+			if(/^\s*(?:text\/\S*|application\/xml|\S*\/\S*\+xml)\s*;.*charset\s*=\s*utf-8/i.test(blob.type)) {
 				return new Blob([String.fromCharCode(0xFEFF), blob], {type: blob.type});
 			}
 			return blob;
 		}
 		, FileSaver = function(blob, name, no_auto_bom) {
-			if (!no_auto_bom) {
+			if(!no_auto_bom) {
 				blob = auto_bom(blob);
 			}
 			// First try a.download, then web filesystem, then object URLs
@@ -89,7 +89,7 @@ var saveAs = saveAs || (function(view) {
 				}
 				// on any filesys errors revert to saving with object URLs
 				, fs_error = function() {
-					if ((is_chrome_ios || (force && is_safari)) && view.FileReader) {
+					if((is_chrome_ios || (force && is_safari)) && view.FileReader) {
 						// Safari doesn't allow downloading of blob urls
 						var reader = new FileReader();
 						reader.onloadend = function() {
@@ -105,14 +105,14 @@ var saveAs = saveAs || (function(view) {
 						return;
 					}
 					// don't create more object URLs than needed
-					if (!object_url) {
+					if(!object_url) {
 						object_url = get_URL().createObjectURL(blob);
 					}
-					if (force) {
+					if(force) {
 						view.location.href = object_url;
 					} else {
 						var opened = view.open(object_url, "_blank");
-						if (!opened) {
+						if(!opened) {
 							// Apple does not allow window.open, see https://developer.apple.com/library/safari/documentation/Tools/Conceptual/SafariExtensionGuide/WorkingwithWindowsandTabs/WorkingwithWindowsandTabs.html
 							view.location.href = object_url;
 						}
@@ -124,7 +124,7 @@ var saveAs = saveAs || (function(view) {
 			;
 			filesaver.readyState = filesaver.INIT;
 
-			if (can_use_save_link) {
+			if(can_use_save_link) {
 				object_url = get_URL().createObjectURL(blob);
 				setImmediate(function() {
 					save_link.href = object_url;
@@ -146,11 +146,11 @@ var saveAs = saveAs || (function(view) {
 	;
 
 	// IE 10+ (native saveAs)
-	if (typeof navigator !== "undefined" && navigator.msSaveOrOpenBlob) {
+	if(typeof navigator !== "undefined" && navigator.msSaveOrOpenBlob) {
 		return function(blob, name, no_auto_bom) {
 			name = name || blob.name || "download";
 
-			if (!no_auto_bom) {
+			if(!no_auto_bom) {
 				blob = auto_bom(blob);
 			}
 			return navigator.msSaveOrOpenBlob(blob, name);

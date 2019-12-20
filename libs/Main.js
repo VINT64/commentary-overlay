@@ -24,12 +24,12 @@ var Main = (function(){
 
 	function selectComOver(comOver){
 		let ov = comOver.getOverlay();
-		if (!ov)
+		if(!ov)
 			return;
 		Page.deselectComment();
 		let commentText = 
 			comOver.getText();
-		if (commentText === null) 
+		if(commentText === null) 
 			commentText = '';
 		Page.selectComment(ov, commentText);
 	}
@@ -37,7 +37,7 @@ var Main = (function(){
 	function removeSelectedComment(){
 
 		function removeComment(ov){
-			if (!ov) 
+			if(!ov) 
 				return;
 			let comOver = Memory.removeComOverByOverlay(ov);
 			Page.removeComOver(comOver);
@@ -80,14 +80,14 @@ var Main = (function(){
 	
 	function selectLayer(i){
 		let LayersNumber = Memory.getLayersNumber();
-		if (i < 0 || i >= LayersNumber){
+		if(i < 0 || i >= LayersNumber){
 			console.log('Tried to select layer: ' + i +
 				', number of layers: ' + LayersNumber +
 				'\nresetting current Layer to 0...');
 			Memory.setCurrentLayer(0);
 			return;
 		}
-		if (!Memory.setCurrentLayer(i)){
+		if(!Memory.setCurrentLayer(i)){
 			console.log('Failed to select layer: ' + i);
 			return;
 		}
@@ -108,14 +108,14 @@ var Main = (function(){
 
 	function removeCurrentLayer(){
 		let layersNumber = Memory.getLayersNumber();
-		if (layersNumber == 1){
+		if(layersNumber == 1){
 			alert(Language.getPhrase('lastLayerAlert'));
 			return;
 		}
 		let layerIndex = Page.getLayerIndex();
-		if (layerIndex < 0)
+		if(layerIndex < 0)
 			return;
-		if (!confirm(Language.getPhrase('removeLayerConfirm')))
+		if(!confirm(Language.getPhrase('removeLayerConfirm')))
 			return;
 		Memory.removeLayer(layerIndex);
 		Page.removeLayer(layerIndex);
@@ -124,7 +124,7 @@ var Main = (function(){
 	
 	function updateLayer(){ 
 		let index = Page.getLayerIndex();
-		if (index == -1) return;
+		if(index == -1) return;
 		selectLayer(index);
 	}
 	
@@ -169,19 +169,19 @@ var Main = (function(){
 		}
 		
 		let imageNumber = Memory.getImagesNumber()
-		if (i < 0 || i >= imageNumber){
+		if(i < 0 || i >= imageNumber){
 			console.log('Tried to select image: ' + i +
 				', number of images: ' + imageNumber);
 			return;
 		}
-		if (!Memory.setCurrentFile(i)){
+		if(!Memory.setCurrentFile(i)){
 			console.log('Failed to select file: ' + i);
 			return;
 		}
 		let currentFile = i;
 		let currentImage = Memory.getFullImageName(
 			currentFile);
-		if (currentImage === null){
+		if(currentImage === null){
 			console.log('selectFile panic, ' +
 				'current image name is null');
 			return;
@@ -195,10 +195,10 @@ var Main = (function(){
 			logError
 			);	
 		
-		if (Memory.getCommentFilesNumber() > 0){
+		if(Memory.getCommentFilesNumber() > 0){
 			let currentCommentFile = 
 				Memory.getFullCommentFileName(currentFile);
-			if (currentImage === null){
+			if(currentImage === null){
 				console.log('selectFile panic, ' +
 					'current comment file name is null');
 				return;
@@ -222,7 +222,7 @@ var Main = (function(){
 	function currentFileLayersListToWrite(){
 	
 		let layersList = Memory.getLayers();
-		if (!Array.isArray(layersList)){
+		if(!Array.isArray(layersList)){
 			console.log('currentFileLayersListToWrite ' +
 			'panic, not an array: ' + i);
 				return [];
@@ -261,7 +261,7 @@ var Main = (function(){
 	
 	function goLeft(){
 		let length = Memory.getImagesNumber();
-		if (length == 0) return;
+		if(length == 0) return;
 		let currentFile = Memory.getCurrentFile();
 		(currentFile - 1 < 0) ?
 			saveAndSelectFileAndLayer(length - 1, 0) :
@@ -270,7 +270,7 @@ var Main = (function(){
 	
 	function goRight(){
 		let length = Memory.getImagesNumber();
-		if (length == 0) return;
+		if(length == 0) return;
 		let currentFile = Memory.getCurrentFile();
 		(currentFile + 1 >= length) ?
 				saveAndSelectFileAndLayer(0, 0) :
@@ -278,7 +278,7 @@ var Main = (function(){
 	}
 	
 	function clearArchive(){
-		if (!confirm(Language.getPhrase(
+		if(!confirm(Language.getPhrase(
 			'removeArchiveConfirm'))) return;
 		Memory.clearArchive();
 		Page.clearArchive();
@@ -287,7 +287,7 @@ var Main = (function(){
 
 	function initOverlay(dr){
 		Page.removeDrawing(dr);
-		if ( dr.style.width == ''
+		if( dr.style.width == ''
 			|| dr.style.height == '0px'
 			|| dr.style.width == '0px'
 			){
@@ -332,13 +332,13 @@ var Main = (function(){
 			() => { //onInput
 				let comover = Memory.getComOverByOverlay(
 					Page.getSelectedComment());
-				if (comover.notComplete()) return;
+				if(comover.notComplete()) return;
 				comover.setText(Page.getCommentInput());
 			}
 		);			
 		Page.initRemoveCommentButton();
 		Page.initSizeInputs();		
-		if (Memory.isClear()){
+		if(Memory.isClear()){
 			addCanvasDefaultFile();
 		}
 		Page.initLayerInput(
@@ -394,7 +394,7 @@ var Main = (function(){
 		Memory.removeDefaultLayer();
 		resetView();
 		let template = Template.get(mode);
-		if (template === null)
+		if(template === null)
 			return;
 		Document.setPage(template);
 		initMode();
@@ -429,7 +429,7 @@ window.addEventListener('keydown', (e) => {
 		case LEFT_ARROW_KEY: Main.goLeft(); break;
 		case RIGHT_ARROW_KEY: Main.goRight(); break;
 		case DELETE_KEY: 
-			if (Page.isInEditorMode())
+			if(Page.isInEditorMode())
 				Main.removeSelectedComment();
 			break;
 		default: break;

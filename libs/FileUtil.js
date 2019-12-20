@@ -31,7 +31,7 @@ var FileUtil = (function(){
 					image.src = e.target.result;
 				}
 				let imageName = Memory.getFullImageName(index);
-				if (imageName === null){
+				if(imageName === null){
 					reject('Image name not retrieved');
 				}
 				let archive = Memory.getArchive();
@@ -56,18 +56,18 @@ var FileUtil = (function(){
 		async function finishLoading(){
 			let imagesNum = Memory.getImagesNumber();
 			let commentsNum = Memory.getCommentFilesNumber();
-			if (imagesNum <	commentsNum)
+			if(imagesNum <	commentsNum)
 				Memory.TruncateCommentFiles(imagesNum);
-			if (imagesNum >	commentsNum) {
-				for (let i = commentsNum; i < imagesNum; i++)
+			if(imagesNum >	commentsNum) {
+				for(let i = commentsNum; i < imagesNum; i++)
 					await addDefaultJsonFileToArchive(i);
 			}
 			Page.disableArchiveButtons(false);
 		}
 		
 		let f = Page.getFile();
-		if (!f) return;
-		if (ParseUtil.isImageMime(f.type)){
+		if(!f) return;
+		if(ParseUtil.isImageMime(f.type)){
 			//image case
 			clean();		
 			archive = Memory.initForSingleImage(f.name);
@@ -96,7 +96,7 @@ var FileUtil = (function(){
 				if( ext == 'json')
 					tempJsons.push(relativePath);
 			});
-			if (tempImages.length < 1){
+			if(tempImages.length < 1){
 				alert(Language.getPhrase('noImagesAlert'));
 				return;
 			}
@@ -118,9 +118,9 @@ var FileUtil = (function(){
 	
 	function saveJson(){
 		let canvas = Page.getCanvas();
-		if (!canvas) return;
+		if(!canvas) return;
 		let imageName = DEFAULT_IMAGE_NAME;
-		if (Memory.getImagesNumber() > 0)
+		if(Memory.getImagesNumber() > 0)
 			imageName = Memory.getImageNameNoPath(
 				Memory.getCurrentFile());
 		let layers = Main.currentFileLayersListToWrite();
@@ -137,7 +137,7 @@ var FileUtil = (function(){
 	
 	function save(){
 		let archive = Memory.getArchive();
-		if (!archive) return;
+		if(!archive) return;
 		
 		Main.saveCurrentFileToArchive().then(() => {
 			archive.generateAsync({type:'blob'})

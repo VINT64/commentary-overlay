@@ -26,7 +26,7 @@ var Page = (function(){
 	imageReader.onload = displayImage;
 	
 	function clear(){
-		for (let key in page ) {
+		for(let key in page ) {
 			page[key] = null;
 		}
 	}
@@ -40,7 +40,7 @@ var Page = (function(){
 	}
 	
 	function deselectComment(){
-		if (page.selectedComment){
+		if(page.selectedComment){
 			page.selectedComment.classList.remove(SELECTED_CLASS);
 		}
 		page.selectedComment = null;
@@ -49,21 +49,19 @@ var Page = (function(){
 	}
 	
 	function removeComOver(comOver){
-		if (!isInEditorMode() || !comOver)
+		if(!isInEditorMode() || !comOver)
 			return;
 		let comment = comOver.getComment();
 		let overlay = comOver.getOverlay();
-		if (comment)
+		if(comment)
 			page.canvasDiv.removeChild(comment);
-		if (!overlay)
+		if(!overlay)
 			return;
 		page.canvasDiv.removeChild(overlay);
-		//TODO rewrite with getHandles()
-		if (overlay.nwHandle)
-			page.canvasDiv.removeChild(overlay.nwHandle);
-		if (overlay.seHandle)
-			page.canvasDiv.removeChild(overlay.seHandle);	
-
+		let handles = comOver.getHandles();
+		for(let handle of handles){
+			page.canvasDiv.removeChild(handle);
+		}
 	}
 	
 	function addComOver(comOver){
@@ -71,24 +69,22 @@ var Page = (function(){
 			return;
 		let comment = comOver.getComment();
 		let overlay = comOver.getOverlay();
-		if (isInViewerMode()){
-			if (comment)
+		if(isInViewerMode()){
+			if(comment)
 				page.allCommentsDiv.appendChild(comment);
-			if (overlay)
+			if(overlay)
 				page.allCommentsDiv.appendChild(overlay);
 		}
-		if (isInEditorMode()){
-			if (comment)
+		if(isInEditorMode()){
+			if(comment)
 				page.canvasDiv.appendChild(comment);
-			if (!overlay)
+			if(!overlay)
 				return;
 			page.canvasDiv.appendChild(overlay);
-		//TODO rewrite with getHandles()
-			if (overlay.nwHandle)
-				page.canvasDiv.appendChild(overlay.nwHandle);
-			if (overlay.seHandle)
-				page.canvasDiv.appendChild(overlay.seHandle);	
-	
+			let handles = comOver.getHandles();
+			for(let handle of handles){
+				page.canvasDiv.appendChild(handle);
+			}
 		}
 	}
 	
@@ -102,24 +98,24 @@ var Page = (function(){
 		Element.disable(page.removeCommentButton,
 			false);
 		Element.disable(page.commentInput, false);
-		if (page.commentInput){
+		if(page.commentInput){
 			page.commentInput.focus();
 		}
 		page.selectedComment = comment;
 	}
 	
 	function selectLayer(name, index){
-		if (page.layerInput){
+		if(page.layerInput){
 			page.layerInput.value =	name;
 		}
-		if (page.layerSelect && 
+		if(page.layerSelect && 
 			page.layerSelect.selectedIndex != index)
 			//do not trigger if it's already selected
 			page.layerSelect.selectedIndex = index;
 	}
 	
 	function triggerFileInput(){
-		if (page.fileInput)
+		if(page.fileInput)
 			page.fileInput.click();
 	}
 	
@@ -134,13 +130,13 @@ var Page = (function(){
 	}	
 	
 	function clearComments(){
-		if (page.allCommentsDiv){
+		if(page.allCommentsDiv){
 			while (page.allCommentsDiv.firstChild) {
 				page.allCommentsDiv.removeChild(
 					page.allCommentsDiv.firstChild);
 			}
 		}
-		if (isInEditorMode()){
+		if(isInEditorMode()){
 			while (page.canvasDiv.firstChild) {
 				page.canvasDiv.removeChild(
 					page.canvasDiv.firstChild);
@@ -160,11 +156,11 @@ var Page = (function(){
 				page.heightInput.value + 'px';
 		}
 		
-		if (!page.imageDiv) return;
+		if(!page.imageDiv) return;
 		let d = Document.getElement(IMAGE_ID);
-		if (d)
+		if(d)
 			page.imageDiv.removeChild(d); 
-		if (page.widthInput && page.heightInput){
+		if(page.widthInput && page.heightInput){
 			unlock_size();
 		}
 	}
@@ -177,7 +173,7 @@ var Page = (function(){
 	function clearArchive(){
 		
 		function clearFileInput(){
-			if (!page.fileInput) return null;
+			if(!page.fileInput) return null;
 			page.fileInput.value = '';
 		}
 		
@@ -188,56 +184,53 @@ var Page = (function(){
 	}
 	
 	function clearLayersSelect(){
-		if (!page.layerSelect) return;
-		for (let i = page.layerSelect.options.length - 1;
+		if(!page.layerSelect) return;
+		for(let i = page.layerSelect.options.length - 1;
 			i >= 0; i--)
 			page.layerSelect.remove(i);
 	}
 	
 	function clearCanvas(){
-		if (!isInEditorMode() ||
+		if(!isInEditorMode() ||
 			!confirm(Language.getPhrase(
 			'removeAllCommentsFromLayerConfirm'))) return;
 		clearComments();
 	}	
 
 	function getLanguage(){
-		if (!page.languageSelect) return null;
+		if(!page.languageSelect) return null;
 		return page.languageSelect.value;
 	}
 	
 	function applyLanguage(lang){
-		for (let key in lang){
-			let el = Document.getElement(key);
-			if (el)
-				el.textContent = lang[key];
-		}
+		for(let key in lang)
+			Document.setText(key, lang[key]);
 		if(page.languageSelect){
 			page.languageSelect.value = lang.id;
 		}
 	}
 
 	function addLayer(name){
-		if (page.layerSelect){
+		if(page.layerSelect){
 			let option = Element.newOption(name);
 			page.layerSelect.add(option);
 		}
 	}
 	
 	function removeLayer(index){
-		if (!page.layerSelect)
+		if(!page.layerSelect)
 			return;
 		page.layerSelect.remove(index);
 	}
 	
 	function getLayerIndex(){
-		if (!page.layerSelect)
+		if(!page.layerSelect)
 			return -1;
 		return page.layerSelect.selectedIndex;
 	}
 	
 	function setLayerName(index, name){
-		if (!page.layerSelect)
+		if(!page.layerSelect)
 			return;
 		page.layerSelect.options[index].text = name;	
 	}
@@ -245,16 +238,16 @@ var Page = (function(){
 	function displayImage(event){
 		
 		function lockSize(w, h){
-			if (isInEditorMode()){
+			if(isInEditorMode()){
 				page.canvasDiv.style.width = w + 'px';
 				page.canvasDiv.style.height = h + 'px';			
 			}
-			if (page.widthInput){
+			if(page.widthInput){
 				page.widthInput.value = w;
 				page.imageDiv.style.width = null; //TODO ?
 				Element.disable(page.widthInput, true);
 			}
-			if (page.heightInput){
+			if(page.heightInput){
 				page.heightInput.value = h;
 				page.imageDiv.style.height = null; //TODO ?
 				Element.disable(page.heightInput, true);
@@ -272,7 +265,7 @@ var Page = (function(){
 	};
 	
 	function getFile(){
-		if (!page.fileInput) return null;
+		if(!page.fileInput) return null;
 		return page.fileInput.files[0];
 	}
 	
@@ -281,33 +274,33 @@ var Page = (function(){
 	}
 	
 	function removeDrawing(dr){
-		if (!page.canvasDiv) return;
+		if(!page.canvasDiv) return;
 		page.canvasDiv.removeChild(dr);
 	}
 	
 	function addDrawing(dr){
-		if (!page.canvasDiv || !dr) return;
+		if(!page.canvasDiv || !dr) return;
 		page.canvasDiv.appendChild(dr);
 	}
 	
 	function initImagePadding(){
-		if (!page.canvasDiv || !page.imageDiv) return;
+		if(!page.canvasDiv || !page.imageDiv) return;
 		let style = getComputedStyle(page.canvasDiv);
 		page.imageDiv.style.padding = style.borderWidth;
 	}
 	
 	function getCommentInput(){
-		if (!page.commentInput) return '';
+		if(!page.commentInput) return '';
 		return page.commentInput.value;
 	}
 	
 	function getLayerInput(){
-		if (!page.layerInput) return '';
+		if(!page.layerInput) return '';
 		return page.layerInput.value;
 	}
 	
 	function initCommentInput(keydownFun, inputFun){
-		if (!page.commentInput) return;
+		if(!page.commentInput) return;
 		page.commentInput.onkeydown = keydownFun;
 		page.commentInput.oninput = inputFun;
 		Element.disable(page.commentInput, true);
@@ -333,17 +326,17 @@ var Page = (function(){
 				page.heightInput.value + 'px';
 		}
 		
-		if (!page.canvasDiv || !page.imageDiv){
+		if(!page.canvasDiv || !page.imageDiv){
 			console.log('Bad usage of initSizeInputs: ' +
 			'canvas div and image div should be present!');
 			return;
 		}
-		if (page.widthInput){
+		if(page.widthInput){
 			updateWidth();
 			page.widthInput.addEventListener('input', 
 				updateWidth);
 		}
-		if (page.heightInput){
+		if(page.heightInput){
 			updateHeight()
 			page.heightInput.addEventListener('input', 
 				updateHeight);
@@ -351,14 +344,14 @@ var Page = (function(){
 	}
 	
 	function initLayerInput(keydownFun, inputFun){
-		if (!page.layerInput) return;
+		if(!page.layerInput) return;
 		page.layerInput.onkeydown = keydownFun;
 		page.layerInput.oninput = inputFun;
 	}
 	
 	function initCanvasDiv(onmousemoveFun, onmousedownFun,
 		onmouseupFun, onmouseleaveFun){
-		if (!page.canvasDiv)
+		if(!page.canvasDiv)
 			return;
 		page.canvasDiv.onmousemove = onmousemoveFun;
 		page.canvasDiv.onmousedown = onmousedownFun;
@@ -367,13 +360,13 @@ var Page = (function(){
 	}
 	
 	function bind(){
-		for (let key in page){
+		for(let key in page){
 			page[key] = Document.getElement(key);
 		}
 	}
 	
 	function initImagePanel(){
-		if (!page.imageDiv || !isInViewerMode()) return;
+		if(!page.imageDiv || !isInViewerMode()) return;
 		page.imageDiv.addEventListener('click', () => {
 			page.allCommentsDiv.style.display = 
 				(page.allCommentsDiv.style.display ==
@@ -382,12 +375,12 @@ var Page = (function(){
 	}
 	
 	function initFileInput(onchangeFun){
-		if (!page.fileInput) return;
+		if(!page.fileInput) return;
 		page.fileInput.addEventListener('change', onchangeFun);
 	}
 	
 	function fillLanguageSelect(list){
-		if (!page.languageSelect) return;
+		if(!page.languageSelect) return;
 		for(const lang of list){
 			let option = Element.newOption(lang);
 			page.languageSelect.add(option);
