@@ -20,7 +20,7 @@ function ComOver(x, y, width, height, text, editorMode,
     const OVERLAY_USED_Z_INDEX = 500;
 	const HANDLE_SIZE = 5;
 	const OVERLAY_MIN_SIZE = 1;
-	const MOVING_CLASS = 'moving';
+	const USING_CLASS = 'using';
 	const SELECTED_CLASS = 'selected';
 	//internal functions
 	function calculatePos(ovX, ovY, ovW, ovH){
@@ -49,23 +49,26 @@ function ComOver(x, y, width, height, text, editorMode,
 	function releaseComment(comment){
 		comment.style.zIndex = COMMENT_STANDARD_Z_INDEX;
 	}
-	function newComment(x, y, text, ov){
+	function newComment(x, y, text, ovs){
+
+		function setVisible(e, com){
+			com.style.visibility = 'visible';
+		}
+
+		function setHidden(e, com){
+			com.style.visibility = 'hidden';
+		}
+
 		let com = Document.newElement('div');
 		com.classList.add('commentDiv');
 		com.style.left = x + 'px';
 		com.style.top = y + 'px';
 		com.appendChild(Document.createText(text));
 		com.style.visibility = 'hidden';
-		ov.addEventListener('mouseover', 
-		() => {
-			com.style.visibility = 'visible';
+		for(ov of ovs){
+			ov.onmouseover = e => setVisible(e, com);
+			ov.onmouseleave = e => setHidden(e, com);
 		}
-		);
-		ov.addEventListener('mouseout', 
-		() => {
-			com.style.visibility = 'hidden';
-		}
-		);
 		releaseComment(com);
 		return com;
 	}
@@ -76,7 +79,7 @@ function ComOver(x, y, width, height, text, editorMode,
         handle.style.width = HANDLE_SIZE + 'px';
         handle.style.height = HANDLE_SIZE + 'px';
         handle.classList.add('handle');
-        //releaseOverlay(handle);				
+        releaseOverlay(handle);				
         return handle;
     }
 	function newOverlay(x, y, width, height, editorMode){
@@ -109,8 +112,8 @@ function ComOver(x, y, width, height, text, editorMode,
 		seh.style.top = pos.seY + 'px';
 	}
 	function resizeAux(ov, w, h){
-		ov.style.width = w;
-		ov.style.height = h;
+		ov.style.width = w + 'px';
+		ov.style.height = h + 'px';
 	}
 	function setIndex(list, index){
 		for(let obj of list)
@@ -146,18 +149,22 @@ function ComOver(x, y, width, height, text, editorMode,
 		this.commentDiv.textContent = text;
 		return text;
 	}
-	function moving(){
+	function using(){
 		useComment(this.commentDiv);
 		useOverlay(this.commentOverlayDiv);
+		for (handle of this.getHandles())
+			useOverlay(handle);
 		Element.toggleClass(this.commentOverlayDiv,
-			MOVING_CLASS, true);
+			USING_CLASS, true);
 		
 	}
 	function release(){
 		releaseComment(this.commentDiv);
 		releaseOverlay(this.commentOverlayDiv);
+		for (handle of this.getHandles())
+			releaseOverlay(handle);
 		Element.toggleClass(this.commentOverlayDiv,
-			MOVING_CLASS, false);
+			USING_CLASS, false);
 	}
 	function move(x, y){
 		moveAux(this.commentDiv,
@@ -177,11 +184,12 @@ function ComOver(x, y, width, height, text, editorMode,
 	this.commentOverlayDiv = 
         newOverlay(x, y, width, height, editorMode);
 	let pos = calculatePos(x, y, width, height);
-	this.commentDiv = newComment(pos.comX, pos.comY,
-		text, this.commentOverlayDiv);
-    this.nwHandle = newHandle(pos.nwX, pos.nwY);
+	this.nwHandle = newHandle(pos.nwX, pos.nwY);
 	this.seHandle = newHandle(pos.seX, pos.seY);
-	setIndex([this.commentOverlayDiv, this.commentDiv,
+	this.commentDiv = newComment(pos.comX, pos.comY,
+		text, [this.commentOverlayDiv,
+		this.nwHandle, this.seHandle]);
+    setIndex([this.commentOverlayDiv, this.commentDiv,
 		this.nwHandle, this.seHandle], index++); 
 	this.getComment = getComment;
 	this.getOverlay = getOverlay;
@@ -191,7 +199,7 @@ function ComOver(x, y, width, height, text, editorMode,
 	this.notComplete = notComplete;
 	this.getText = getText;
 	this.setText = setText;
-	this.moving = moving;
+	this.using = using;
 	this.release = release;
 	this.move = move;
 	this.resize = resize;

@@ -336,7 +336,7 @@ var Main = (function(){
 					Page.fillCoordinatesInfo)
 			},
 			(e) => {
-				Page.deselectComOver();
+				//Page.deselectComOver();
 				let dr = Drawing
 					.canvasOnMouseDown(e, Page.removeDrawing);
 				Page.addDrawing(dr);

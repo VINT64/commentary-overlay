@@ -24,14 +24,14 @@ div.selected {
 	background: rgba(0, 120, 215, 0.5);
 }
 
-div.moving {
+div.using {
 	border: 1px solid #00ff00;
 	background: rgba(0, 128, 0, 0.5);
 }
 
 div#canvasDiv {
 	background: transparent;
-	border: 5px solid #000;
+	border: 10px solid #000;
 }
 
 input.numInput {
@@ -100,7 +100,7 @@ div#gallery {
 
 div.handle{
 	position: absolute;
-	/* cursor: se-resize; for now it only distracts*/ 
+	cursor: se-resize; 
 }
 
 div.drawing{
