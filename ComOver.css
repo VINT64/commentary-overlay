@@ -85,6 +85,7 @@ div.commentDiv {
 }
 
 div.commentOverlayDiv {
+	box-sizing: border-box;
 	position: absolute;
 }
 
