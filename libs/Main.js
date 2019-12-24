@@ -37,16 +37,7 @@ var Main = (function(){
 	function addCommentListeners(comOver){
 		if(!Page.isInEditorMode())
 			return;
-		// ov.onmousedown = (e) => {
-		// 	//prevents canvas from starting drawing new overlay
-		// 	e.stopPropagation(); 
-		// };
-		//TODO change sig
-		Drawing.dragOverlay(comOver, selectComOver);
-		//Drawing.resizeOverlay(com, ov);
-		// ov.onclick = (e) => {
-		// 	selectComOver(com, ov);
-		// };
+		Drawing.addDragAndResize(comOver, selectComOver);
 	}
 	
 	function removeFileLayers(){
@@ -270,14 +261,9 @@ var Main = (function(){
 	}	
 
 
-	function initOverlay(dr){
+	function initOverlay(dr, bool){
 		Page.removeDrawing(dr);
-		if( dr.style.width == ''
-			|| dr.style.height == '0px'
-			|| dr.style.width == '0px'
-			){
-			return;
-		}
+		if(!bool) return;
 		let coords = Element.parseCoordinates(dr);
 		let comOver = new ComOver(coords.x,
 			coords.y, coords.w, coords.h,
@@ -336,9 +322,10 @@ var Main = (function(){
 					Page.fillCoordinatesInfo)
 			},
 			(e) => {
-				//Page.deselectComOver();
+				Page.deselectComOver();
 				let dr = Drawing
-					.canvasOnMouseDown(e, Page.removeDrawing);
+					.canvasOnMouseDown(e, Page.getCanvas(),
+						Page.removeDrawing);
 				Page.addDrawing(dr);
 			},
 			(e) => {

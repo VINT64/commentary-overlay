@@ -1,30 +1,33 @@
 var Drawing = (function(){
 
+    const OVERLAY_MIN_WIDTH = 3;
+    const OVERLAY_MIN_HEIGHT = 3;
+
     let mouse = { x: 0, y: 0, startX: 0,
-        startY: 0, offsetX: 0, offsetY: 0,
-        rawX: 0, rawY: 0};
+        startY: 0, offsetX: 0, offsetY: 0, moved: false};
     let drawing = null;
-    let moving = { comOver: null, moved: false, w: 0, h: 0};
-    let resizing = {comOver: null, nw: false,
+    let moving = { comOver: null, w: 0, h: 0};
+    let resizing = {comOver: null, corner: '',
         offsetX: 0, offsetY: 0};
-    //copied from 
+
+    //partially copied from 
 	//https://www.w3schools.com/howto/howto_js_draggable.asp
-    function dragOverlay(comOver, selectComOver) {
+    function addDragAndResize(comOver, selectComOver) {
         let ov = comOver.getOverlay();
         ov.onmousedown = dragMouseDown;
         ov.onclick = click;
         let nw = comOver.getNWHandle();
         let se = comOver.getSEHandle();
         nw.onmousedown = function(e){
-            resizeMouseDown(e, true);
+            resizeMouseDown(e, 'nw');
         }
         se.onmousedown = function(e){
-            resizeMouseDown(e, false);
+            resizeMouseDown(e, 'se');
         }
         
         function click(e){
-            if(moving.moved){
-                moving.moved = false;
+            if(mouse.moved){
+                mouse.moved = false;
                 return;
             }
             selectComOver(comOver);
@@ -32,7 +35,7 @@ var Drawing = (function(){
 		function dragMouseDown(e) {
             //if(resizing.comOver) return;
             moving.comOver = comOver;
-            moving.moved = false;
+            mouse.moved = false;
             comOver.using();
 			let ev = e || window.event;
 			ev.stopPropagation();
@@ -53,23 +56,23 @@ var Drawing = (function(){
 			ov.onmouseup = null;
         }
         
-        function resizeMouseDown(e, nwbool){
-            //stopResizing(resizing.comOver, resizing.nw, e);
+        function resizeMouseDown(e, corner){
+            //stopResizing(resizing.comOver, corner, e);
             resizing.comOver = comOver;
-            resizing.nw = nwbool;
+            resizing.corner = corner;
             comOver.using();
             let ev = e || window.event;
 			ev.stopPropagation();
 			ev.preventDefault();
             let coords = Element.parseCoordinates(ov);
-            if(nwbool){
+            if(corner === 'nw'){
                 mouse.startX = coords.x + coords.w;
                 mouse.startY = coords.y + coords.h;
                 resizing.offsetX = coords.x - mouse.x;
                 resizing.offsetY = coords.y - mouse.y;
                 nw.onmouseup = closeResizeElement;
             } 
-            else{
+            else if(corner === 'se'){
                 mouse.startX = coords.x;
                 mouse.startY = coords.y;
                 resizing.offsetX = mouse.x - 
@@ -86,133 +89,129 @@ var Drawing = (function(){
             se.onmouseup = null;
         }
 
-	}
-
-
-    function updateMouseOffset(canvas){
-        mouse.offsetX = 0;
-        mouse.offsetY = 0;
-        let el = canvas;
-        while (el) {
-            mouse.offsetX += (el.offsetLeft -
-                el.scrollLeft +	el.clientLeft);
-            mouse.offsetY += (el.offsetTop -
-                el.scrollTop + el.clientTop);
-            el = el.offsetParent;
-        }
-    }
+	}    
     
-    function keepInBorders(cursor, canvas,
+    function inBorders(val, min, max){
+        return Math.min(Math.max(val, min), max);
+    }
+
+    function keepInBorders(cursor, minX, minY, maxX, maxY){
+        cursor.x = inBorders(cursor.x, minX, maxX);
+        cursor.y = inBorders(cursor.y, minY, maxY);
+    }
+
+    function keepOnCanvas(cursor, canvas,
         rightOffset, downOffset){
-        if(cursor.x < 0)
-            cursor.x = 0;
-        else if(cursor.x > canvas.clientWidth - rightOffset)
-            cursor.x = canvas.clientWidth - rightOffset;
-        if(cursor.y < 0)
-            cursor.y = 0;
-        else if(cursor.y > canvas.clientHeight - downOffset)
-            cursor.y = canvas.clientHeight - downOffset;
-   }
+        keepInBorders(cursor, 0, 0,
+            canvas.clientWidth - rightOffset,
+            canvas.clientHeight - downOffset);
+  }
 
     function setMousePosition(e, canvas) { 
-        // Stack Overflow code
-        let ev = e || window.event; //Moz || IE
-        if(ev.pageX) { //Moz
-            mouse.x = ev.pageX - mouse.offsetX;
-            mouse.y = ev.pageY - mouse.offsetY;
-        } else if(ev.clientX) { //IE
-            mouse.x = ev.clientX +
-                document.body.scrollLeft;
-            mouse.y = ev.clientY +
-                document.body.scrollTop;
+        // partially copied from Stack Overflow
+        function updateMouseOffset(canvas){
+            mouse.offsetX = 0;
+            mouse.offsetY = 0;
+            let el = canvas;
+            while (el) {
+                mouse.offsetX += (el.offsetLeft -
+                    el.scrollLeft +	el.clientLeft);
+                mouse.offsetY += (el.offsetTop -
+                    el.scrollTop + el.clientTop);
+                el = el.offsetParent;
+            }
         }
-        //canvas border correction
-        mouse.rawX = mouse.x;
-        mouse.rawY = mouse.y;
-        keepInBorders(mouse, canvas, 0, 0);
+
+        updateMouseOffset(canvas);
+        if(!e){
+            console.log('Event has not passed. ' +
+                'Maybe browser is too old');
+            return;
+        }
+        //Moz
+        mouse.x = e.pageX - mouse.offsetX;
+        mouse.y = e.pageY - mouse.offsetY;
     };
 
     function canvasOnMouseMove(e, canvas, showOnPage){
-        updateMouseOffset(canvas);
+        mouse.moved = true;
         setMousePosition(e, canvas);
-        let x = e.pageX - mouse.offsetX;
-        let y = e.pageY - mouse.offsetY;
         showOnPage(
             'X : ' + mouse.x + ', Y : ' + mouse.y +
-            ' (' + mouse.rawX + ':' + mouse.rawY + ')');
+            ' (' + e.pageX + ':' + e.pageY + ')');
         if(drawing){
-            drawing.style.width = 
-                Math.abs(mouse.x - mouse.startX) + 'px';
-            drawing.style.height = 
-                Math.abs(mouse.y - mouse.startY) + 'px';
-            drawing.style.left = 
-               (mouse.x - mouse.startX < 0) ?
-                mouse.x + 'px' : mouse.startX + 'px';
-            drawing.style.top =
-                (mouse.y - mouse.startY < 0) ?
-                mouse.y + 'px' : mouse.startY + 'px';
+            //here startX,Y is starting point
+            keepOnCanvas(mouse, canvas, 0, 0);
+            let width = Math.max(OVERLAY_MIN_WIDTH,
+                Math.abs(mouse.x - mouse.startX));
+            let height = Math.max(OVERLAY_MIN_HEIGHT,
+                Math.abs(mouse.y - mouse.startY));
+            let cursor = {
+                x: Math.min(mouse.x, mouse.startX),
+                y: Math.min(mouse.y, mouse.startY)
+            }
+            keepOnCanvas(cursor, canvas, OVERLAY_MIN_WIDTH,
+                OVERLAY_MIN_HEIGHT);
+            Element.setCoordinates(drawing, cursor.x,
+                cursor.y, width, height);
         }
-        if(moving.comOver){ 
-            moving.moved = true;
-            let newPos = { x: mouse.x - mouse.startX,
+        if(moving.comOver){
+            //here startX,Y is starting point
+            let cursor = { x: mouse.x - mouse.startX,
                 y: mouse.y - mouse.startY};
-            keepInBorders(newPos, canvas, moving.w, moving.h);
-			moving.comOver.move(newPos.x, newPos.y);
+            keepOnCanvas(cursor, canvas, moving.w, moving.h);
+			moving.comOver.move(cursor.x, cursor.y);
         }
         if(resizing.comOver){
-            let newPos;
-            if(resizing.nw){
-                newPos = { 
-                    x: mouse.rawX + resizing.offsetX,
-                    y: mouse.rawY + resizing.offsetY,
+            //here startX,Y is opposite corner
+            let cursor;
+            if(resizing.corner === 'nw'){
+                let x = inBorders(mouse.x +
+                    resizing.offsetX, 0, mouse.startX
+                    - OVERLAY_MIN_WIDTH),
+                    y = inBorders(mouse.y +
+                        resizing.offsetY, 0, mouse.startY
+                        - OVERLAY_MIN_HEIGHT);
+                cursor = { 
+                    x: x,
+                    y: y,
+                    w: Math.max(mouse.startX - x,
+                        OVERLAY_MIN_WIDTH),
+                    h: Math.max(mouse.startY - y,
+                        OVERLAY_MIN_HEIGHT)
                 }
-                keepInBorders(newPos, canvas, 0, 0);
-                newPos.w = mouse.startX - 
-                    newPos.x;
-                newPos.h = mouse.startY - 
-                    newPos.y;
-                if (newPos.x >= mouse.startX)
-                newPos.x = mouse.startX - 1;
-                if (newPos.y >= mouse.startY)
-                newPos.y = mouse.startY - 1;
-                if (newPos.w <= 0)
-                    newPos.w = 1;
-                if (newPos.h <= 0)
-                    newPos.h = 1;
-
             }
-            else{
-                newPos = { 
+            else if(resizing.corner === 'se'){
+                cursor = { 
                     x: mouse.startX,
                     y: mouse.startY,   
-                    w: mouse.rawX - resizing.offsetX
-                        - mouse.startX,
-                    h: mouse.rawY - resizing.offsetY
-                        - mouse.startY
+                    w: inBorders(mouse.x - resizing.offsetX
+                        - mouse.startX, OVERLAY_MIN_WIDTH,
+                        canvas.clientWidth - mouse.startX),
+                    h: inBorders(mouse.y - resizing.offsetY
+                        - mouse.startY, OVERLAY_MIN_HEIGHT,
+                        canvas.clientHeight - mouse.startY)
                 }
-                if(newPos.w > canvas.clientWidth - newPos.x)
-                    newPos.w = canvas.clientWidth - newPos.x;
-                if(newPos.h > canvas.clientHeight - newPos.y)
-                    newPos.h = canvas.clientHeight - newPos.y;
-                if(newPos.w <= 0)
-                    newPos.w = 1;
-                if(newPos.h <= 0)
-                    newPos.h = 1;
             }
-            resizing.comOver.resize(newPos.x, newPos.y,
-                newPos.w, newPos.h);
+            else return;
+            resizing.comOver.resize(cursor.x, cursor.y,
+                cursor.w, cursor.h);
         }
     }
     
-    function canvasOnMouseDown(e, removeFaulty) {
+    function canvasOnMouseDown(e, canvas, removeFaulty) {
         // if(moving.comOver || resizing.comOver)
         //     return;
-        mouse.startX = mouse.x;
-        mouse.startY = mouse.y;
-        
+        mouse.moved = false;
+        mouse.startX = inBorders(mouse.x, 0,
+            canvas.clientWidth - OVERLAY_MIN_WIDTH);
+        mouse.startY = inBorders(mouse.y, 0,
+            canvas.clientHeight - OVERLAY_MIN_HEIGHT);
         if(drawing !== null)
             removeFaulty(drawing);
-        drawing = Element.newDrawing(mouse.x, mouse.y, 0,0); 
+        drawing = Element.newDrawing(mouse.startX,
+            mouse.startY, OVERLAY_MIN_WIDTH,
+            OVERLAY_MIN_HEIGHT); 
         return drawing;
     }
 
@@ -226,7 +225,10 @@ var Drawing = (function(){
 
     function stopAllActions(e, initOverlay){
         stopMoving(moving.comOver, e);
-        stopResizing(resizing.comOver, resizing.nw, e);
+        moving.comOver = null;
+        stopResizing(resizing.comOver,
+            resizing.corner, e);
+        resizing.comOver = null;
         stopDrawing(drawing, initOverlay);
         drawing = null;
     }
@@ -236,17 +238,35 @@ var Drawing = (function(){
         comOver.getOverlay().onmouseup(e);
     }
 
-    function stopResizing(comOver, nw, e){
+    function stopResizing(comOver, corner, e){
         if(!comOver) return;
-        if(nw)
+        if(corner === 'nw')
             comOver.getNWHandle().onmouseup(e);
-        else
+        else if(corner === 'se')
             comOver.getSEHandle().onmouseup(e);
     }
 
-    function stopDrawing(drawing, initOverlay){
+    function stopDrawing(drawing, initOverlay/*, canvas*/){
+
+
+        // function safeParse(str){
+        //     let ret = parseInt(str, 10);
+        //     return Number.isNaN(ret) ? 0 : ret;
+        // }
+
         if(!drawing) return;
-        initOverlay(drawing);
+        //let top = safeParse(drawing.style.top);
+        //let left = safeParse(drawing.style.left);
+        //let width = safeParse(drawing.style.width);
+        //let height = safeParse(drawing.style.height);
+        let ok = (mouse.moved
+            //&& width >= OVERLAY_MIN_WIDTH
+            //&& height >= OVERLAY_MIN_HEIGHT
+            //&& top >= 0 && left >= 0
+            //&& left + width <= canvas.clientWidth
+            //&& top + height <= canvas.clientHeight
+            );
+        initOverlay(drawing, ok);
     }
     
     return {
@@ -254,6 +274,6 @@ var Drawing = (function(){
         canvasOnMouseDown: canvasOnMouseDown,
         canvasOnMouseUp: canvasOnMouseUp,
         canvasOnMouseLeave,canvasOnMouseLeave,
-        dragOverlay: dragOverlay
+        addDragAndResize: addDragAndResize
     }
 }());

@@ -58,12 +58,26 @@ var Element = (function(){
 	}
 
 	function parseCoordinates(div){
-		return {
-			x: parseInt(div.style.left, 10),
-			y: parseInt(div.style.top, 10),
-			w: parseInt(div.style.width, 10),
-			h: parseInt(div.style.height, 10),
+		
+		function safeParse(str){
+			let ret = parseInt(str, 10);
+			return Number.isNaN(ret) ? 0 : ret;
 		}
+
+		return {
+			x: safeParse(div.style.left),
+			y: safeParse(div.style.top),
+			w: safeParse(div.style.width),
+			h: safeParse(div.style.height),
+		}
+	}
+
+	function setCoordinates(div, x, y, w, h){
+		div.style.left = x + 'px';
+		div.style.top = y + 'px';
+		div.style.width = w + 'px';
+		div.style.height = h + 'px';
+
 	}
 
 	function clearSelect(select){
@@ -81,6 +95,7 @@ var Element = (function(){
 		newTemplate: newTemplate,
 		newOption: newOption,
 		parseCoordinates: parseCoordinates,
-		clearSelect: clearSelect
+		setCoordinates: setCoordinates,
+		clearSelect: clearSelect,
 	}
 }());

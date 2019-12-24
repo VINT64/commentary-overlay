@@ -97,6 +97,7 @@ div#canvasDiv {
 
 div#gallery {
 	white-space: nowrap;
+	user-select: none;
 }
 
 div.handle{
@@ -105,5 +106,6 @@ div.handle{
 }
 
 div.drawing{
+	box-sizing: border-box;
 	position: absolute;
 }
