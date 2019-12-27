@@ -6,10 +6,6 @@ https://unlicense.org ) */
 
 const DEFAULT_LAYER_NAME = 'default';
 const DEFAULT_IMAGE_NAME = 'default';
-const LEFT_ARROW_KEY = 37;
-const RIGHT_ARROW_KEY = 39;
-const ESCAPE_KEY = 27;
-const DELETE_KEY = 46;
 
 var Main = (function(){
 
@@ -17,21 +13,12 @@ var Main = (function(){
 		console.log(error.message);
 	}
 	
-	function updateLanguage(){
-		Language.set(Page.getLanguage(),
-			Page.applyLanguage);
-	}	
-
 	function selectComOver(comOver){
 		let commentText = 
 			comOver.getText();
 		if(commentText === null) 
 			commentText = '';
 		Page.selectComOver(comOver, commentText);
-	}
-	
-	function removeSelectedComment(){
-		Page.removeSelectedComOver();
 	}
 	
 	function addCommentListeners(comOver){
@@ -76,33 +63,6 @@ var Main = (function(){
 		});
 		Page.selectLayer(Memory.getCurrentLayerName(), i);
 	}	
-	
-	function clearCurrentLayer(){
-		Memory.clearCurrentLayer();
-		Page.clearCanvas();
-	}
-
-	function removeCurrentLayer(){
-		let layersNumber = Memory.getLayersNumber();
-		if(layersNumber == 1){
-			alert(Language.getPhrase('lastLayerAlert'));
-			return;
-		}
-		let layerIndex = Page.getLayerIndex();
-		if(layerIndex < 0)
-			return;
-		if(!confirm(Language.getPhrase('removeLayerConfirm')))
-			return;
-		Memory.removeLayer(layerIndex);
-		Page.removeLayer(layerIndex);
-		selectLayer(Page.getLayerIndex());
-	}
-	
-	function updateLayer(){ 
-		let index = Page.getLayerIndex();
-		if(index == -1) return;
-		selectLayer(index);
-	}
 	
 	const jsonReader = new FileReader();
 
@@ -191,10 +151,6 @@ var Main = (function(){
 		selectFile(f);
 	}
 	
-	function selectAfterLoading(){
-		selectFileAndLayer(0,0);
-	}
-	
 	function currentFileLayersListToWrite(){
 	
 		let layersList = Memory.getLayers();
@@ -213,7 +169,7 @@ var Main = (function(){
 				Memory.getFullCurrentCommentFileName();
 			let archive = Memory.getArchive();
 			f.onload = (e) => {
-				file = JSON.parse(event.target.result);
+				file = JSON.parse(e.target.result);
 				file.layers = 
 					currentFileLayersListToWrite();
 				archive.file(filename,
@@ -235,32 +191,6 @@ var Main = (function(){
 			selectFileAndLayer(index, layer));
 	}
 	
-	function goLeft(){
-		let length = Memory.getImagesNumber();
-		if(length == 0) return;
-		let currentFile = Memory.getCurrentFile();
-		(currentFile - 1 < 0) ?
-			saveAndSelectFileAndLayer(length - 1, 0) :
-			saveAndSelectFileAndLayer(currentFile - 1, 0);
-	}
-	
-	function goRight(){
-		let length = Memory.getImagesNumber();
-		if(length == 0) return;
-		let currentFile = Memory.getCurrentFile();
-		(currentFile + 1 >= length) ?
-				saveAndSelectFileAndLayer(0, 0) :
-				saveAndSelectFileAndLayer(currentFile + 1, 0);
-	}
-	
-	function clearArchive(){
-		if(!confirm(Language.getPhrase(
-			'removeArchiveConfirm'))) return;
-		Memory.clearArchive();
-		Page.clearArchive();
-	}	
-
-
 	function initOverlay(dr, bool){
 		Page.removeDrawing(dr);
 		if(!bool) return;
@@ -306,41 +236,193 @@ var Main = (function(){
 			}
 		);			
 		Page.initRemoveCommentButton();
-		Page.initSizeInputs();		
+		Page.initSizeInputs();
 		if(Memory.isClear()){
 			addCanvasDefaultFile();
 		}
 		Page.initLayerInput(
-				(e) => {e.stopPropagation()},
-				() => {renameCurrentLayer(
+				(e) =>  //onKeyDown
+					{e.stopPropagation()},
+				() => //onInput
+					{renameCurrentLayer(
 					Page.getLayerInput());}
 		)
 		Page.initCanvasDiv(
-			(e) => {
+			(e) => { //onMouseMove
 				Drawing.canvasOnMouseMove(
 					e, Page.getCanvas(),
 					Page.fillCoordinatesInfo)
 			},
-			(e) => {
+			(e) => { //onMouseDown
+				if (e.button != 0) return null;
 				Page.deselectComOver();
 				let dr = Drawing
 					.canvasOnMouseDown(e, Page.getCanvas(),
 						Page.removeDrawing);
 				Page.addDrawing(dr);
 			},
-			(e) => {
+			(e) => { //onMouseUp
 				Drawing.canvasOnMouseUp(e,
 					initOverlay);
 			},
-			(e) => {Drawing.canvasOnMouseLeave(e, initOverlay);}
+			(e) => { //onMouseLeave
+				Drawing.canvasOnMouseLeave(
+				e, initOverlay);}
 		)
 	}
 	
-	function initMode(){
+	function bindEvents(root){
+
+		function launchEditor(){
+			launch('editor', root);
+		}
+
+		function launchViewer(){
+			launch('viewer', root);
+		}
+
+		function updateLanguage(){
+			Language.set(Page.getLanguage(),
+				Page.applyLanguage);
+		}
+		
+		function saveArchive(){
+			if(!Memory.getArchive()) return;		
+			FileUtil.save(saveCurrentFileToArchive);
+		}
+
+		function updateLayer(){ 
+			let index = Page.getLayerIndex();
+			if(index == -1) return;
+			selectLayer(index);
+		}
+		
+		function go(getNext){
+			let length = Memory.getImagesNumber();
+			if(length == 0) return;
+			let currentFile = Memory.getCurrentFile();
+			let nextFile = getNext(currentFile, length);
+			saveAndSelectFileAndLayer(nextFile, 0);
+		}
+
+		function goLeft(){
+			go((currentFile, length) =>
+				(currentFile - 1 < 0) ?
+					length - 1 : currentFile - 1);
+		}
+		
+		function goRight(){
+			go((currentFile, length) =>
+				(currentFile + 1 >= length) ?
+					0 : currentFile + 1);
+		}
+		
+		function clearArchive(){
+			if(!confirm(Language.getPhrase(
+				'removeArchiveConfirm'))) return;
+			Memory.clearArchive();
+			Page.clearArchive();
+		}	
+	
+		function saveJson(){
+			FileUtil.saveJson(
+				currentFileLayersListToWrite(),
+				Page.getCanvas());
+		}
+
+		function removeCurrentLayer(){
+			let layersNumber = Memory.getLayersNumber();
+			if(layersNumber == 1){
+				alert(Language.getPhrase(
+					'lastLayerAlert'));
+				return;
+			}
+			let layerIndex = Page.getLayerIndex();
+			if(layerIndex < 0)
+				return;
+			if(!confirm(Language.getPhrase(
+				'removeLayerConfirm')))
+				return;
+			Memory.removeLayer(layerIndex);
+			Page.removeLayer(layerIndex);
+			selectLayer(Page.getLayerIndex());
+		}
+
+		function clearCurrentLayer(){
+			Memory.clearCurrentLayer();
+			Page.clearCanvas();
+		}
+	
+		function bindKeys(){
+
+			const LEFT_ARROW_KEY = 37;
+			const RIGHT_ARROW_KEY = 39;
+			const ESCAPE_KEY = 27;
+			const DELETE_KEY = 46;
+			
+			window.onkeydown = (e) => {
+				switch(e.keyCode){
+					case ESCAPE_KEY: 
+						Page.deselectComOver(); break;
+					case LEFT_ARROW_KEY: 
+						goLeft(); break;
+					case RIGHT_ARROW_KEY: 
+						goRight(); break;
+					case DELETE_KEY: 
+						Page.removeSelectedComOver();
+						break;
+					default: break;
+				}
+			};
+		}
+
+		let events = [
+			['viewerButton', 'onclick', launchViewer],
+			['editorButton', 'onclick', launchEditor],
+			['languageSelect', 'onchange',
+				updateLanguage],
+			['loadButton', 'onclick',
+				Page.triggerFileInput],
+			['saveArchiveButton', 'onclick', saveArchive],
+			['layerSelect', 'onchange', updateLayer],
+			['leftButton', 'onclick', goLeft],
+			['rightButton', 'onclick', goRight],
+			['clearArchiveButton', 'onclick',
+				clearArchive],
+			['saveJsonButton', 'onclick', saveJson],
+			['addLayerButton', 'onclick',
+				addEmptyLayer],
+			['removeLayerButton', 'onclick',
+				removeCurrentLayer],
+			['removeAllCommentsFromLayerButton',
+				'onclick', clearCurrentLayer],
+			['removeCommentButton', 'onclick',
+				Page.removeSelectedComOver()]
+		]
+
+		for(event of events){
+			let el = Document.getElement(event[0]);
+			if (el)
+				el[event[1]] = event[2];
+		}
+		bindKeys();
+	}
+
+	function initMode(root){
 		Page.bind();
 		Page.initImagePanel();
 		initCanvas();
-		Page.initFileInput(FileUtil.load);
+		Page.initFileInput((file) => FileUtil.load(
+			file,
+			() => { 
+				Page.clearImage();
+				Page.clearGallery();
+				removeFileLayers();
+			}, 
+			() => {Page.disableArchiveButtons(false);
+				selectFileAndLayer(0,0);
+			}
+		));
 		Page.fillLanguageSelect(Language.getList());
 		Language.applyCurrent(Page.applyLanguage);
 		if(Memory.getArchive()){
@@ -351,12 +433,13 @@ var Main = (function(){
 		else {
 			Page.disableArchiveButtons(true);
 		}
+		bindEvents(root);
 	}
 	
-	function launch(mode){
-	
+	function launch(mode, root){
+		if(!root) return;
 		function resetView(){
-			Document.clear();
+			Document.clear(root);
 			Page.clear();
 			//Memory.clear();
 		}
@@ -366,45 +449,13 @@ var Main = (function(){
 		let template = Template.get(mode);
 		if(template === null)
 			return;
-		Document.setPage(template);
-		initMode();
+		root.appendChild(template);
+		initMode(root);
 		
 	}
 	
-
 	return {
-		updateLanguage: updateLanguage,
-		removeSelectedComment: removeSelectedComment,
-		removeFileLayers: removeFileLayers,
-		addEmptyLayer: addEmptyLayer,
-		clearCurrentLayer: clearCurrentLayer,
-		removeCurrentLayer: removeCurrentLayer,
-		updateLayer: updateLayer,
-		selectFileAndLayer: selectFileAndLayer,
-		selectAfterLoading: selectAfterLoading,
-		saveCurrentFileToArchive: 
-			saveCurrentFileToArchive,
-		currentFileLayersListToWrite:
-			currentFileLayersListToWrite,
-		goLeft: goLeft,
-		goRight: goRight,
-		clearArchive: clearArchive,
 		launch: launch
 	}
 }());
-
-window.addEventListener('keydown', (e) => {
-	switch(e.keyCode){
-		case ESCAPE_KEY: Page.deselectComOver(); break;
-		case LEFT_ARROW_KEY: Main.goLeft(); break;
-		case RIGHT_ARROW_KEY: Main.goRight(); break;
-		case DELETE_KEY: 
-			if(Page.isInEditorMode())
-				Main.removeSelectedComment();
-			break;
-		default: break;
-	}
-});
-
-
 

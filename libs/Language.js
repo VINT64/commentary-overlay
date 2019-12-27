@@ -17,7 +17,7 @@ var Language = (function(){
 				'Удалить все комментарии со слоя',
 			addLayerButton: 'Новый слой',
 			removeLayerButton: 'Удалить слой',
-			saveJsonButton: 'Сохранить комментарии',
+			saveJsonButton: 'Сохранить текущий JSON-файл',
 			removeCommentButton: 
 				'Удалить выбранный комментарий',
 			saveArchiveButton:
@@ -47,7 +47,7 @@ var Language = (function(){
 				'Remove all commentaries from layer',
 			addLayerButton: 'New layer',
 			removeLayerButton: 'Delete layer',
-			saveJsonButton: 'Save commentaries',
+			saveJsonButton: 'Save current JSON-file',
 			removeCommentButton: 'Remove selected',
 			saveArchiveButton: 'Save Archive',
 			commentLabel: 'Commentary: ',

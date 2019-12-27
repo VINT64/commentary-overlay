@@ -10,12 +10,12 @@ var Element = (function(){
     const DRAWING_Z_INDEX = 500;
 	const DISABLED_ATTRIBUTE = 'disabled'
 	
-	function toggleClass(element, cl, flag){
-		if(!element) return;
+	function toggleClass(el, cl, flag){
+		if(!el) return;
 		if(flag)
-			element.classList.add(cl);
+			el.classList.add(cl);
 		else
-			element.classList.remove(cl);
+			el.classList.remove(cl);
 	}
 
 	function disable(element, flag){
@@ -25,6 +25,11 @@ var Element = (function(){
 				DISABLED_ATTRIBUTE, true);
 		else
 			element.removeAttribute(DISABLED_ATTRIBUTE);
+	}
+
+	function toggleHidden(el, flag){
+		if(!el) return;
+		el.style.visibility = flag ? 'hidden' : 'visible';
 	}
 	
 
@@ -75,7 +80,9 @@ var Element = (function(){
 	function setCoordinates(div, x, y, w, h){
 		div.style.left = x + 'px';
 		div.style.top = y + 'px';
-		div.style.width = w + 'px';
+		if(w > 0)
+			div.style.width = w + 'px';
+		if(h > 0)
 		div.style.height = h + 'px';
 
 	}
@@ -90,6 +97,7 @@ var Element = (function(){
 	return {
 		toggleClass: toggleClass,
 		disable: disable,
+		toggleHidden: toggleHidden,
 		newDrawing: newDrawing,
 		newImage: newImage,
 		newTemplate: newTemplate,

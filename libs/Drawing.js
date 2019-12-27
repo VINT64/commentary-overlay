@@ -33,6 +33,7 @@ var Drawing = (function(){
             selectComOver(comOver);
         }
 		function dragMouseDown(e) {
+            if (e.button != 0) return;
             //if(resizing.comOver) return;
             moving.comOver = comOver;
             mouse.moved = false;
@@ -57,6 +58,7 @@ var Drawing = (function(){
         }
         
         function resizeMouseDown(e, corner){
+            if (e.button != 0) return;
             //stopResizing(resizing.comOver, corner, e);
             resizing.comOver = comOver;
             resizing.corner = corner;
@@ -202,6 +204,7 @@ var Drawing = (function(){
     function canvasOnMouseDown(e, canvas, removeFaulty) {
         // if(moving.comOver || resizing.comOver)
         //     return;
+        setMousePosition(e, canvas);
         mouse.moved = false;
         mouse.startX = inBorders(mouse.x, 0,
             canvas.clientWidth - OVERLAY_MIN_WIDTH);

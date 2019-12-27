@@ -21,7 +21,7 @@ var Page = (function(){
 	
 	const IMAGE_ID = 'img';
 	const imageReader = new FileReader();
-	
+	const DEFAULT_CANVAS_SIZE = 512;
 	imageReader.onload = displayImage;
 	
 	function clear(){
@@ -44,6 +44,7 @@ var Page = (function(){
 		}
 		page.selectedComOver = null;
 		Element.disable(page.commentInput, true);
+		// Element.toggleHidden(page.commentInput, true);
 		Element.disable(page.removeCommentButton, true);
 	}
 	
@@ -101,8 +102,14 @@ var Page = (function(){
 		Element.disable(page.removeCommentButton,
 			false);
 		Element.disable(page.commentInput, false);
+		//Element.toggleHidden(page.commentInput, false);
 		if(page.commentInput){
-			page.commentInput.focus();
+			// let ov = comOver.getOverlay();
+			// let coords = ov.getBoundingClientRect();
+			// Element.setCoordinates(page.commentInput, coords.left + coords.width + 25, coords.top, 0, 0);
+			page.commentInput.focus({
+				preventScroll: true
+			  });
 		}
 		comOver.select(true);
 		page.selectedComOver = comOver;
@@ -260,10 +267,10 @@ var Page = (function(){
 		let image = Element.newImage(event.target.result);
 		image.id = IMAGE_ID;
 		page.imageDiv.appendChild(image);
-		image.addEventListener('load', () => {
+		image.onload = () => {
 			lockSize(image.naturalWidth,
 				image.naturalHeight);
-		});
+		};
 	};
 	
 	function getFile(){
@@ -306,6 +313,7 @@ var Page = (function(){
 		page.commentInput.onkeydown = keydownFun;
 		page.commentInput.oninput = inputFun;
 		Element.disable(page.commentInput, true);
+		//Element.toggleHidden(page.commentInput, true);
 	}
 	
 	function initRemoveCommentButton(){
@@ -333,15 +341,15 @@ var Page = (function(){
 			'canvas div and image div should be present!');
 			return;
 		}
+		widthInput.value = DEFAULT_CANVAS_SIZE;
+		heightInput.value = DEFAULT_CANVAS_SIZE;
 		if(page.widthInput){
 			updateWidth();
-			page.widthInput.addEventListener('input', 
-				updateWidth);
+			page.widthInput.oninput = updateWidth;
 		}
 		if(page.heightInput){
 			updateHeight()
-			page.heightInput.addEventListener('input', 
-				updateHeight);
+			page.heightInput.oninput = updateHeight;
 		}
 	}
 	
@@ -359,6 +367,8 @@ var Page = (function(){
 		page.canvasDiv.onmousedown = onmousedownFun;
 		page.canvasDiv.onmouseup = onmouseupFun;
 		page.canvasDiv.onmouseleave = onmouseleaveFun;
+		page.canvasDiv.oncontextmenu = 
+			e => e.preventDefault();
 	}
 	
 	function bind(){
@@ -369,17 +379,17 @@ var Page = (function(){
 	
 	function initImagePanel(){
 		if(!page.imageDiv || !isInViewerMode()) return;
-		page.imageDiv.addEventListener('click', () => {
+		page.imageDiv.onclick = () => {
 			page.allCommentsDiv.style.display = 
 				(page.allCommentsDiv.style.display ==
 					'none') ? 'block' : 'none';
-		});
+		};
 	}
 	
 	function initFileInput(onchangeFun){
 		if(!page.fileInput) return;
-		page.fileInput
-			.addEventListener('change', onchangeFun);
+		page.fileInput.onchange = (e) =>
+		onchangeFun(getFile());
 	}
 	
 	function fillLanguageSelect(list){

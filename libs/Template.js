@@ -13,43 +13,36 @@ var Template = (function(){
 	<div id="controlPanel">
 		<p>
 			<button type="button" 
-				id="editorButton" 
-				onclick="Main.launch('editor')">
+				id="editorButton">
 			</button>
-			<select id="languageSelect" 
-				onchange="Main.updateLanguage()">
+			<select id="languageSelect">
 			</select>
 		</p>
 		<p>
 			<input type="file" id="fileInput">
 			<button type="button" 
-				id="loadButton" 
-				onclick="Page.triggerFileInput()">
+				id="loadButton">
 			</button>
 			<button type="button" 
-				id="saveArchiveButton" 
-				onclick="FileUtil.save()">
+				id="saveArchiveButton">
 			</button>
 		</p>
 		<p>
 			<span id="fileInfo"></span>
-			<select id="layerSelect" 
-			onchange="Main.updateLayer()">
+			<select id="layerSelect">
 			</select>
 		</p>
 	</div>
 	<div id="gallery">
-		<button type="button" 
-			class="nav" 
-			onclick="Main.goLeft()">
+		<button type="button" id="leftButton"
+			class="nav">
 			&lt;
 		</button>
 		<div id="imageDiv">
 			<div id="allCommentsDiv"></div>
 		</div>
-		<button type="button" 
-			class="nav"
-			onclick="Main.goRight()">
+		<button type="button" id="rightButton"
+			class="nav">
 			&gt;
 		</button>
 	</div>
@@ -60,27 +53,25 @@ var Template = (function(){
 	<div id="controlPanel">
 		<p>
 			<button type="button" 
-				id="viewerButton" 
-				onclick="Main.launch('viewer')">
+				id="viewerButton">
 			</button>
-			<select id="languageSelect" 
-				onchange="Main.updateLanguage()">
+			<select id="languageSelect">
 			</select>
 		</p>
 		<p>
 			<input type="file" id="fileInput">
 			<button type="button" 
-				id="loadButton" 
-				onclick="Page.triggerFileInput()">
+				id="loadButton">
 			</button>
 			<button type="button" 
-				id="clearArchiveButton" 
-				onclick="Main.clearArchive()">
+				id="clearArchiveButton">
 			</button>
 			</button>
 			<button type="button" 
-				id="saveArchiveButton" 
-				onclick="FileUtil.save()">
+				id="saveArchiveButton">
+			</button>
+			<button type="button" 
+				id="saveJsonButton">
 			</button>
 		</p>
 		<p>
@@ -92,35 +83,26 @@ var Template = (function(){
 			</label>
 			<input type="text" 
 			id="layerInput">
-			<select id="layerSelect" 
-			onchange="Main.updateLayer()">
+			<select id="layerSelect">
 			</select>
 			<button type="button" 
-				id="addLayerButton" 
-				onclick="Main.addEmptyLayer()">
+				id="addLayerButton">
 			</button>
 			<button type="button" 
-				id="removeLayerButton" 
-				onclick="
-					Main.removeCurrentLayer()">
+				id="removeLayerButton">
 			</button>
 		</p>
 		<p>
 			<input type="number" 
 				class="numInput" 
 				id="widthInput" 
-				min="1" value="512">
+				min="1">
 			<input type="number" 
 				class="numInput" 
 				id="heightInput" 
-				min="1" value="512">
+				min="1">
 			<button type="button" 
-				id="removeAllCommentsFromLayerButton" 
-				onclick="Main.clearCurrentLayer()">
-			</button>
-			<button type="button" 
-				id="saveJsonButton" 
-				onclick="FileUtil.saveJson()">
+				id="removeAllCommentsFromLayerButton">
 			</button>
 		</p>
 		<p>
@@ -131,9 +113,7 @@ var Template = (function(){
 			id="commentInput">
 			</textarea>
 			<button type="button" 
-				id="removeCommentButton" 
-				onclick="
-				Main.removeSelectedComment()">
+				id="removeCommentButton">
 			</button>
 		</p>
 		<p>
@@ -143,14 +123,14 @@ var Template = (function(){
 		</p>
 	</div>
 	<div id="gallery">
-		<button type="button" class="nav" 
-			onclick="Main.goLeft()">
+		<button type="button" id="leftButton"
+			class="nav">
 			&lt;
 		</button>
 		<div id="canvasDiv"></div>
 		<div id="imageDiv"></div>
-		<button type="button" class="nav" 
-			onclick="Main.goRight()">
+		<button type="button" id="rightButton"
+			class="nav">
 			&gt;
 		</button>
 	</div>

@@ -5,19 +5,13 @@ All original code is unlicensed (more info
 https://unlicense.org ) */
 
 
-//uses Page, Memory, Json, Language, FileSaver,
+//uses Memory, Json, Language, FileSaver,
 //parseUtil
 //functions from util: 
 
 var FileUtil = (function(){
-	function load(){
+	function load(file, clean, afterLoading){
 	
-		function clean(){ 
-			Page.clearImage();
-			Page.clearGallery();
-			Main.removeFileLayers();
-		}
-		
 		function getImageSize(index){
 			return new Promise((resolve, reject) => {
 				let f = new FileReader();
@@ -63,29 +57,26 @@ var FileUtil = (function(){
 				for(let i = commentsNum; i < imagesNum; i++)
 					await addDefaultJsonFileToArchive(i);
 			}
-			Page.disableArchiveButtons(false);
 		}
 		
-		let f = Page.getFile();
-		if(!f) return;
-		if(ParseUtil.isImageMime(f.type)){
+		if(!file) return;
+		if(ParseUtil.isImageMime(file.type)){
 			//image case
 			clean();		
-			archive = Memory.initForSingleImage(f.name);
+			archive = Memory.initForSingleImage(file.name);
 			let singleImageReader = new FileReader();
 			singleImageReader.onload = (e) => {
 				archive.file(
 					imageName,
 					e.target.result,
 					{binary: true});
-					finishLoading().then(
-						() => Main.selectAfterLoading());
+					finishLoading().then(afterLoading);
 			}
-			singleImageReader.readAsBinaryString(f);
+			singleImageReader.readAsBinaryString(file);
 			return;
 		}
 			
-		JSZip.loadAsync(f).then((z) => {
+		JSZip.loadAsync(file).then((z) => {
 			// archive case
 			let tempImages = [];
 			let tempJsons = [];
@@ -109,8 +100,7 @@ var FileUtil = (function(){
 			clean();
 			
 			Memory.initForArchive(z, tempImages, tempJsons);
-			finishLoading().then(() => 
-				Main.selectAfterLoading());
+			finishLoading().then(afterLoading);
 		},
 		(e) => {
 			alert(Language.getPhrase(
@@ -119,14 +109,12 @@ var FileUtil = (function(){
 		});
 	}
 	
-	function saveJson(){
-		let canvas = Page.getCanvas();
+	function saveJson(layers, canvas){
 		if(!canvas) return;
 		let imageName = DEFAULT_IMAGE_NAME;
 		if(Memory.getImagesNumber() > 0)
 			imageName = Memory.getImageNameNoPath(
 				Memory.getCurrentFile());
-		let layers = Main.currentFileLayersListToWrite();
 		let body = JSON.stringify(new JsonFile1(imageName,
 			canvas.clientWidth, canvas.clientHeight,
 			layers));
@@ -138,11 +126,8 @@ var FileUtil = (function(){
 		saveAs(blob, fileName);
 	}
 	
-	function save(){
-		let archive = Memory.getArchive();
-		if(!archive) return;
-		
-		Main.saveCurrentFileToArchive().then(() => {
+	function save(saveCurrentFileToArchive){
+		saveCurrentFileToArchive().then(() => {
 			archive.generateAsync({type:'blob'})
 				.then((blob) => {
 					saveAs(blob, '');

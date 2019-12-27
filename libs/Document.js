@@ -15,10 +15,9 @@ var Document = (function(){
 		return document.createElement(tag);
 	}
 	
-	function clear(){
-		while(document.body.firstChild){
-			document.body.removeChild(
-				document.body.firstChild);
+	function clear(el){
+		while(el.firstChild){
+			el.removeChild(el.firstChild);
 		}
 	}
 	
@@ -26,9 +25,6 @@ var Document = (function(){
 		return document.createTextNode(text);
 	}
 
-	function setPage(el){
-		document.body.appendChild(el);
-	}
 	function setText(id, text){
 		let el = getElement(id);
 		if(el)
@@ -40,7 +36,6 @@ var Document = (function(){
 		newElement: newElement,
 		clear: clear,
 		createText: createText,
-		setPage: setPage,
 		setText: setText
 	}
 }());
