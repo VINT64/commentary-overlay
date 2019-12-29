@@ -9,6 +9,11 @@ const DEFAULT_IMAGE_NAME = 'default';
 
 var Main = (function(){
 
+	const LEFT_ARROW_KEY = 37;
+	const RIGHT_ARROW_KEY = 39;
+	const ESCAPE_KEY = 27;
+	const DELETE_KEY = 46;
+
 	function logError(error){
 		console.log(error.message);
 	}
@@ -287,8 +292,10 @@ var Main = (function(){
 		}
 		
 		function saveArchive(){
-			if(!Memory.getArchive()) return;		
-			FileUtil.save(saveCurrentFileToArchive);
+			let archive = Memory.getArchive();
+			if(!archive) return;	
+			FileUtil.save(archive,
+				saveCurrentFileToArchive);
 		}
 
 		function updateLayer(){ 
@@ -354,11 +361,6 @@ var Main = (function(){
 		}
 	
 		function bindKeys(){
-
-			const LEFT_ARROW_KEY = 37;
-			const RIGHT_ARROW_KEY = 39;
-			const ESCAPE_KEY = 27;
-			const DELETE_KEY = 46;
 			
 			window.onkeydown = (e) => {
 				switch(e.keyCode){
