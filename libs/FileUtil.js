@@ -126,8 +126,8 @@ var FileUtil = (function(){
 		saveAs(blob, fileName);
 	}
 	
-	function save(archive, saveCurrentFileToArchive){
-		saveCurrentFileToArchive().then(() => {
+	function save(saveCurrentFileToArchive){
+		saveCurrentFileToArchive().then((archive) => {
 			archive.generateAsync({type:'blob'})
 				.then((blob) => {
 					saveAs(blob, '');

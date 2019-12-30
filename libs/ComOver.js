@@ -49,26 +49,13 @@ function ComOver(x, y, width, height, text, editorMode,
 	function releaseComment(comment){
 		comment.style.zIndex = COMMENT_STANDARD_Z_INDEX;
 	}
-	function newComment(x, y, text, ovs){
-
-		function setVisible(e, com){
-			com.style.visibility = 'visible';
-		}
-
-		function setHidden(e, com){
-			com.style.visibility = 'hidden';
-		}
-
+	function newComment(x, y, text){
 		let com = Document.newElement('div');
 		com.classList.add('commentDiv');
 		com.style.left = x + 'px';
 		com.style.top = y + 'px';
 		com.appendChild(Document.createText(text));
 		com.style.visibility = 'hidden';
-		for(ov of ovs){
-			ov.onmouseover = e => setVisible(e, com);
-			ov.onmouseleave = e => setHidden(e, com);
-		}
 		releaseComment(com);
 		return com;
 	}
@@ -179,6 +166,36 @@ function ComOver(x, y, width, height, text, editorMode,
 		Element.toggleClass(this.commentOverlayDiv,
 			SELECTED_CLASS, toggle);
 	}
+	function alwaysVisible(bool){
+
+		function setVisible(com){
+			com.style.visibility = 'visible';
+		}
+
+		function setHidden(com){
+			com.style.visibility = 'hidden';
+		}
+
+		function allVisible(){
+			return [this.commentOverlayDiv,
+				this.nwHandle, this.seHandle];
+		}
+
+		let com = this.commentDiv;
+		let ovs = allVisible.call(this);
+		for(ov of ovs){
+			ov.onmouseover = e => setVisible(com);
+			if(bool){
+				ov.onmouseleave = null;
+			}
+			else
+				ov.onmouseleave = e => setHidden(com);
+		}
+		if(bool)
+			setVisible(com);
+		else
+			setHidden(com);
+	}
 	//initialization
 
 	this.commentOverlayDiv = 
@@ -187,8 +204,7 @@ function ComOver(x, y, width, height, text, editorMode,
 	this.nwHandle = newHandle(pos.nwX, pos.nwY);
 	this.seHandle = newHandle(pos.seX, pos.seY);
 	this.commentDiv = newComment(pos.comX, pos.comY,
-		text, [this.commentOverlayDiv,
-		this.nwHandle, this.seHandle]);
+		text);
     setIndex([this.commentOverlayDiv, this.commentDiv,
 		this.nwHandle, this.seHandle], index++); 
 	this.getComment = getComment;
@@ -204,5 +220,7 @@ function ComOver(x, y, width, height, text, editorMode,
 	this.move = move;
 	this.resize = resize;
 	this.select = select;
+	this.alwaysVisible = alwaysVisible;
+	this.alwaysVisible(false);
 	listeners(this);
 }

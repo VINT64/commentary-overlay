@@ -38,10 +38,14 @@ var Page = (function(){
 		return !!page.allCommentsDiv;
 	}
 	
+	function selectAux(comOver, bool){
+		if(!comOver) return;
+		comOver.select(bool);
+		comOver.alwaysVisible(bool);
+	}
+
 	function deselectComOver(){
-		if(page.selectedComOver){
-			page.selectedComOver.select(false);
-		}
+		selectAux(page.selectedComOver, false);
 		page.selectedComOver = null;
 		Element.disable(page.commentInput, true);
 		// Element.toggleHidden(page.commentInput, true);
@@ -61,8 +65,9 @@ var Page = (function(){
 		}
 	}
 
-	function removeSelectedComOver(){
+	function removeSelectedComOver(remove){
 		removeComOver(page.selectedComOver);
+		remove(page.selectedComOver);
 		deselectComOver();
 	}
 	
@@ -90,14 +95,10 @@ var Page = (function(){
 		}
 	}
 	
-	function getSelectedComOver(){
-		return page.selectedComOver;
-	}
-	
 	function selectComOver(comOver, text){
-		if(page.selectedComOver){
-			page.selectedComOver.select(false);
-		}
+		// if(page.selectedComOver){
+		// 	page.selectedComOver.select(false);
+		// }
 		page.commentInput.value = text ? text : '';
 		Element.disable(page.removeCommentButton,
 			false);
@@ -111,7 +112,8 @@ var Page = (function(){
 				preventScroll: true
 			  });
 		}
-		comOver.select(true);
+		selectAux(page.selectedComOver, false);
+		selectAux(comOver, true);
 		page.selectedComOver = comOver;
 	}
 	
@@ -134,11 +136,6 @@ var Page = (function(){
 		if(page.fileInfo)
 			page.fileInfo.textContent = text;
 	}
-	
-	function fillCoordinatesInfo(text){
-		if(page.coordinatesInfo)
-			page.coordinatesInfo.textContent = text;
-	}	
 	
 	function clearGallery(){
 		if(page.allCommentsDiv){
@@ -206,11 +203,6 @@ var Page = (function(){
 		clearGallery();
 	}	
 
-	function getLanguage(){
-		if(!page.languageSelect) return null;
-		return page.languageSelect.value;
-	}
-	
 	function applyLanguage(lang){
 		for(let key in lang)
 			Document.setText(key, lang[key]);
@@ -218,6 +210,12 @@ var Page = (function(){
 			page.languageSelect.value = lang.id;
 		}
 	}
+
+	function updateLanguage(set){
+		if(!page.languageSelect) return;
+		set(page.languageSelect.value, applyLanguage);
+	}
+	
 
 	function addLayer(name){
 		if(page.layerSelect){
@@ -236,12 +234,6 @@ var Page = (function(){
 		if(!page.layerSelect)
 			return -1;
 		return page.layerSelect.selectedIndex;
-	}
-	
-	function setLayerName(index, name){
-		if(!page.layerSelect)
-			return;
-		page.layerSelect.options[index].text = name;	
 	}
 	
 	function displayImage(event){
@@ -272,105 +264,150 @@ var Page = (function(){
 				image.naturalHeight);
 		};
 	};
-	
-	function getFile(){
-		if(!page.fileInput) return null;
-		return page.fileInput.files[0];
-	}
-	
+		
 	function getCanvas(){
 		return page.canvasDiv;
 	}
 	
-	function removeDrawing(dr){
-		if(!page.canvasDiv) return;
-		page.canvasDiv.removeChild(dr);
-	}
-	
-	function addDrawing(dr){
-		if(!page.canvasDiv || !dr) return;
-		page.canvasDiv.appendChild(dr);
-	}
-	
-	function initImagePadding(){
-		if(!page.canvasDiv || !page.imageDiv) return;
-		let style = getComputedStyle(page.canvasDiv);
-		page.imageDiv.style.padding = style.borderWidth;
-	}
-	
-	function getCommentInput(){
-		if(!page.commentInput) return '';
-		return page.commentInput.value;
-	}
-	
-	function getLayerInput(){
-		if(!page.layerInput) return '';
-		return page.layerInput.value;
-	}
-	
-	function initCommentInput(keydownFun, inputFun){
-		if(!page.commentInput) return;
-		page.commentInput.onkeydown = keydownFun;
-		page.commentInput.oninput = inputFun;
-		Element.disable(page.commentInput, true);
-		//Element.toggleHidden(page.commentInput, true);
-	}
-	
-	function initRemoveCommentButton(){
-		Element.disable(page.removeCommentButton, true);
-	}
-	
-	function initSizeInputs(){
-		
-		function updateWidth(){
-			page.canvasDiv.style.width = 
-				page.widthInput.value + 'px';
-			page.imageDiv.style.width = 
-				page.widthInput.value + 'px';
-		}
-		
-		function updateHeight(){
-			page.canvasDiv.style.height = 
-				page.heightInput.value + 'px';
-			page.imageDiv.style.height = 
-				page.heightInput.value + 'px';
-		}
-		
-		if(!page.canvasDiv || !page.imageDiv){
-			console.log('Bad usage of initSizeInputs: ' +
-			'canvas div and image div should be present!');
-			return;
-		}
-		widthInput.value = DEFAULT_CANVAS_SIZE;
-		heightInput.value = DEFAULT_CANVAS_SIZE;
-		if(page.widthInput){
-			updateWidth();
-			page.widthInput.oninput = updateWidth;
-		}
-		if(page.heightInput){
-			updateHeight()
-			page.heightInput.oninput = updateHeight;
-		}
-	}
-	
-	function initLayerInput(keydownFun, inputFun){
-		if(!page.layerInput) return;
-		page.layerInput.onkeydown = keydownFun;
-		page.layerInput.oninput = inputFun;
-	}
-	
 	function initCanvasDiv(onmousemoveFun, onmousedownFun,
-		onmouseupFun, onmouseleaveFun){
+		onmouseupFun, onmouseleaveFun, push,
+		addCommentListeners){
+
+		function addDrawing(dr){
+			if(!page.canvasDiv || !dr) return;
+			page.canvasDiv.appendChild(dr);
+		}
+		
+		function removeDrawing(dr){
+			if(!page.canvasDiv) return;
+			page.canvasDiv.removeChild(dr);
+		}
+		
+		function initOverlay(dr, bool){
+			removeDrawing(dr);
+			if(!bool) return;
+			let coords = Element.parseCoordinates(dr);
+			let comOver = new ComOver(coords.x,
+				coords.y, coords.w, coords.h,
+				 '', true, addCommentListeners);
+			push(comOver);
+			addComOver(comOver);
+		}	
+
 		if(!page.canvasDiv)
 			return;
-		page.canvasDiv.onmousemove = onmousemoveFun;
-		page.canvasDiv.onmousedown = onmousedownFun;
-		page.canvasDiv.onmouseup = onmouseupFun;
-		page.canvasDiv.onmouseleave = onmouseleaveFun;
+		page.canvasDiv.onmousemove = 
+			(e) => onmousemoveFun(e, page.canvasDiv,
+				(text) => {
+					if(page.coordinatesInfo)
+						page.coordinatesInfo
+							.textContent = text;
+				});
+		page.canvasDiv.onmousedown = (e) => {
+			if (e.button != 0) return null;
+			deselectComOver();
+			let dr = onmousedownFun(e, page.canvasDiv,
+					removeDrawing);
+			addDrawing(dr);
+		};
+		page.canvasDiv.onmouseup = (e) => {
+			onmouseupFun(e, initOverlay);
+		};
+		page.canvasDiv.onmouseleave = (e) => {
+			onmouseleaveFun(e, initOverlay);
+		};
 		page.canvasDiv.oncontextmenu = 
 			e => e.preventDefault();
 	}
 	
+	function initEditorMode(noPropagate, renameFun){
+
+		function initImagePadding(){
+			if(!page.canvasDiv || !page.imageDiv) return;
+			let style = getComputedStyle(page.canvasDiv);
+			page.imageDiv.style.padding = style.borderWidth;
+		}
+		
+		function initCommentInput(noPropagate){
+			if(!page.commentInput) return;
+			page.commentInput.onkeydown = (e) => {
+				for(key of noPropagate)
+					if(e.keyCode == key)
+						e.stopPropagation();
+			};
+			page.commentInput.oninput = () => {
+				if(page.selectedComOver)
+					page.selectedComOver.setText(
+						page.commentInput.value);
+			};
+			Element.disable(page.commentInput, true);
+			//Element.toggleHidden(page.commentInput, true);
+		}
+		
+		function initRemoveCommentButton(){
+			Element.disable(page.removeCommentButton,
+				true);
+		}
+		
+		function initSizeInputs(){
+			
+			function updateWidth(){
+				page.canvasDiv.style.width = 
+					page.widthInput.value + 'px';
+				page.imageDiv.style.width = 
+					page.widthInput.value + 'px';
+			}
+			
+			function updateHeight(){
+				page.canvasDiv.style.height = 
+					page.heightInput.value + 'px';
+				page.imageDiv.style.height = 
+					page.heightInput.value + 'px';
+			}
+			
+			if(!page.canvasDiv || !page.imageDiv){
+				console.log('Bad usage of initSizeInputs: ' +
+				'canvas div and image div should be present!');
+				return;
+			}
+			widthInput.value = DEFAULT_CANVAS_SIZE;
+			heightInput.value = DEFAULT_CANVAS_SIZE;
+			if(page.widthInput){
+				updateWidth();
+				page.widthInput.oninput = updateWidth;
+			}
+			if(page.heightInput){
+				updateHeight()
+				page.heightInput.oninput = updateHeight;
+			}
+		}
+	
+		function initLayerInput(renameFun){
+
+			function setLayerName(index, name){
+				if(!page.layerSelect)
+					return;
+				page.layerSelect
+					.options[index].text = name;
+			}
+
+			if(!page.layerInput) return;
+			page.layerInput.onkeydown =
+				(e) => e.stopPropagation();
+			page.layerInput.oninput = 
+				(e) => renameFun(page.layerInput.value,
+					setLayerName);
+		}
+					
+		if(!isInEditorMode()) 
+			return;		
+		initImagePadding();		
+		initCommentInput(noPropagate);		
+		initRemoveCommentButton();
+		initSizeInputs();
+		initLayerInput(renameFun);
+	}
+
 	function bind(){
 		for(let key in page){
 			page[key] = Document.getElement(key);
@@ -386,10 +423,24 @@ var Page = (function(){
 		};
 	}
 	
-	function initFileInput(onchangeFun){
+	function initFileInput(loadFileFun, removeFileLayers,
+		finalSelect){
+		
+		function clean(){ 
+			clearImage();
+			clearGallery();
+			removeFileLayers();
+		}
+
+		function finalize(){
+			disableArchiveButtons(false);
+			finalSelect();
+		}
+
 		if(!page.fileInput) return;
 		page.fileInput.onchange = (e) =>
-		onchangeFun(getFile());
+			loadFileFun(page.fileInput.files[0],
+				clean, finalize)
 	}
 	
 	function fillLanguageSelect(list){
@@ -410,36 +461,23 @@ var Page = (function(){
 		deselectComOver,
 		removeSelectedComOver: removeSelectedComOver,
 		addComOver: addComOver,
-		getSelectedComOver: getSelectedComOver,
 		selectComOver: selectComOver,
 		selectLayer: selectLayer,
 		triggerFileInput: triggerFileInput,
 		fillFileInfo: fillFileInfo,
-		fillCoordinatesInfo: fillCoordinatesInfo,
 		clearGallery: clearGallery,
-		clearImage: clearImage,
 		disableArchiveButtons: disableArchiveButtons,
 		clearArchive: clearArchive,
 		clearLayersSelect: clearLayersSelect,
 		clearCanvas: clearCanvas,
-		getLanguage: getLanguage,
 		applyLanguage: applyLanguage,
+		updateLanguage: updateLanguage,
 		addLayer: addLayer,
 		removeLayer: removeLayer,
 		getLayerIndex: getLayerIndex,
-		setLayerName: setLayerName,
-		getFile: getFile,
 		getCanvas: getCanvas,
-		removeDrawing: removeDrawing,
-		addDrawing: addDrawing,
-		initImagePadding: initImagePadding,
-		getCommentInput: getCommentInput,
-		getLayerInput: getLayerInput,
-		initCommentInput: initCommentInput,
-		initRemoveCommentButton: initRemoveCommentButton,
-		initSizeInputs: initSizeInputs,
-		initLayerInput: initLayerInput,
 		initCanvasDiv: initCanvasDiv,
+		initEditorMode: initEditorMode,
 		bind: bind,
 		initImagePanel: initImagePanel,
 		initFileInput: initFileInput,

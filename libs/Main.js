@@ -109,7 +109,7 @@ var Main = (function(){
 			jsonReader.readAsText(blob);
 		}
 		
-		let imageNumber = Memory.getImagesNumber()
+		let imageNumber = Memory.getImagesNumber();
 		if(i < 0 || i >= imageNumber){
 			console.log('Tried to select image: ' + i +
 				', number of images: ' + imageNumber);
@@ -174,12 +174,12 @@ var Main = (function(){
 				Memory.getFullCurrentCommentFileName();
 			let archive = Memory.getArchive();
 			f.onload = (e) => {
-				file = JSON.parse(e.target.result);
+				let file = JSON.parse(e.target.result);
 				file.layers = 
 					currentFileLayersListToWrite();
 				archive.file(filename,
 					JSON.stringify(file));
-				resolve();
+				resolve(archive);
 			};
 			archive.file(filename).async('blob')
 				.then((blob) => {
@@ -196,17 +196,6 @@ var Main = (function(){
 			selectFileAndLayer(index, layer));
 	}
 	
-	function initOverlay(dr, bool){
-		Page.removeDrawing(dr);
-		if(!bool) return;
-		let coords = Element.parseCoordinates(dr);
-		let comOver = new ComOver(coords.x,
-			coords.y, coords.w, coords.h,
-			 '', true, addCommentListeners);
-		Memory.getCurrentComOvers().push(comOver);
-		Page.addComOver(comOver);
-	}
-
 	function initCanvas() {
 		
 		function addCanvasDefaultFile(){
@@ -214,65 +203,27 @@ var Main = (function(){
 			selectLayer(0);
 		}
 		
-		function renameCurrentLayer(name){
+		function renameCurrentLayer(name, pageRename){
 			let currentLayerIndex = 
 				Memory.getCurrentLayer();
-			Page.setLayerName(currentLayerIndex, name);
+			pageRename(currentLayerIndex, name);
 			Memory.setLayerName(currentLayerIndex, name);
 		}
 			
-		if(!Page.isInEditorMode()) 
-			return;		
-		Page.initImagePadding();		
-		Page.initCommentInput(
-			(e) => { //onKeydown
-				switch(e.keyCode){
-					case LEFT_ARROW_KEY: 
-					case RIGHT_ARROW_KEY:
-					e.stopPropagation();
-					//if propagated, left and right will
-					//change the file
-					break;
-				}
-			},
-			() => { //onInput
-				let comover = Page.getSelectedComOver();
-				comover.setText(Page.getCommentInput());
-			}
-		);			
-		Page.initRemoveCommentButton();
-		Page.initSizeInputs();
+		Page.initEditorMode([LEFT_ARROW_KEY,
+			RIGHT_ARROW_KEY],
+			renameCurrentLayer);
 		if(Memory.isClear()){
 			addCanvasDefaultFile();
 		}
-		Page.initLayerInput(
-				(e) =>  //onKeyDown
-					{e.stopPropagation()},
-				() => //onInput
-					{renameCurrentLayer(
-					Page.getLayerInput());}
-		)
 		Page.initCanvasDiv(
-			(e) => { //onMouseMove
-				Drawing.canvasOnMouseMove(
-					e, Page.getCanvas(),
-					Page.fillCoordinatesInfo)
-			},
-			(e) => { //onMouseDown
-				if (e.button != 0) return null;
-				Page.deselectComOver();
-				let dr = Drawing
-					.canvasOnMouseDown(e, Page.getCanvas(),
-						Page.removeDrawing);
-				Page.addDrawing(dr);
-			},
-			(e) => { //onMouseUp
-				Drawing.canvasOnMouseUp(e,
-					initOverlay);
-			},
-			(e) => { //onMouseLeave
-				Drawing.canvasOnMouseLeave(
-				e, initOverlay);}
+			Drawing.canvasOnMouseMove,
+			Drawing.canvasOnMouseDown,
+			Drawing.canvasOnMouseUp,
+			Drawing.canvasOnMouseLeave,
+			(comOver) => Memory.getCurrentComOvers()
+				.push(comOver),
+			addCommentListeners
 		)
 	}
 	
@@ -287,14 +238,12 @@ var Main = (function(){
 		}
 
 		function updateLanguage(){
-			Language.set(Page.getLanguage(),
-				Page.applyLanguage);
+			Page.updateLanguage(Language.set);
 		}
 		
 		function saveArchive(){
-			let archive = Memory.getArchive();
-			if(!archive) return;	
-			FileUtil.save(archive,
+			if(!Memory.getArchive()) return;	
+			FileUtil.save(
 				saveCurrentFileToArchive);
 		}
 
@@ -352,14 +301,19 @@ var Main = (function(){
 				return;
 			Memory.removeLayer(layerIndex);
 			Page.removeLayer(layerIndex);
-			selectLayer(Page.getLayerIndex());
+			updateLayer();
 		}
 
 		function clearCurrentLayer(){
 			Memory.clearCurrentLayer();
 			Page.clearCanvas();
 		}
-	
+
+		function removeSelectedComOver(){
+			Page.removeSelectedComOver(
+				Memory.removeComOver);
+		}
+
 		function bindKeys(){
 			
 			window.onkeydown = (e) => {
@@ -371,7 +325,7 @@ var Main = (function(){
 					case RIGHT_ARROW_KEY: 
 						goRight(); break;
 					case DELETE_KEY: 
-						Page.removeSelectedComOver();
+						removeSelectedComOver();
 						break;
 					default: break;
 				}
@@ -399,7 +353,7 @@ var Main = (function(){
 			['removeAllCommentsFromLayerButton',
 				'onclick', clearCurrentLayer],
 			['removeCommentButton', 'onclick',
-				Page.removeSelectedComOver()]
+				removeSelectedComOver]
 		]
 
 		for(event of events){
@@ -414,27 +368,21 @@ var Main = (function(){
 		Page.bind();
 		Page.initImagePanel();
 		initCanvas();
-		Page.initFileInput((file) => FileUtil.load(
-			file,
-			() => { 
-				Page.clearImage();
-				Page.clearGallery();
-				removeFileLayers();
-			}, 
-			() => {Page.disableArchiveButtons(false);
-				selectFileAndLayer(0,0);
-			}
-		));
+		Page.initFileInput(FileUtil.load, removeFileLayers,
+			() => selectFileAndLayer(0,0));
 		Page.fillLanguageSelect(Language.getList());
 		Language.applyCurrent(Page.applyLanguage);
+		let noArchive = false;
 		if(Memory.getArchive()){
 			saveAndSelectFileAndLayer(
 				Memory.getCurrentFile(),
 				Memory.getCurrentLayer());
 		}
 		else {
-			Page.disableArchiveButtons(true);
+			noArchive = true;
 		}
+		Page.disableArchiveButtons(noArchive);
+
 		bindEvents(root);
 	}
 	
