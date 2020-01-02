@@ -67,14 +67,14 @@ var Memory = (function(){
 		return memory.archive;
 	}
 	
-	function getCurrentLayer(){
+	function getCurrentLayerIndex(){
 		return memory.currentLayer;
 	}
 	
-	function setCurrentLayer(i){
+	function setCurrentLayerIndex(i){
 		if(i < 0 || i >= memory.openLayers.length){
 			console.log(
-				'Bad param for setCurrentLayer: ' + i);
+				'Bad param for setCurrentLayerIndex: ' + i);
 				return false;
 		}
 		else{
@@ -92,14 +92,14 @@ var Memory = (function(){
 		return true;
 	}
 	
-	function getCurrentFile(){
+	function getCurrentFileIndex(){
 		return memory.currentFile;
 	}
 	
-	function setCurrentFile(i){
+	function setCurrentFileIndex(i){
 		if(i < 0 || i >= memory.filenames.images.length){
 			console.log(
-				'Bad param for setCurrentFile: ' + i);
+				'Bad param for setCurrentFileIndex: ' + i);
 				return false;
 		}
 		else{
@@ -180,14 +180,18 @@ var Memory = (function(){
 		return layer.setName(name);
 	}
 	
-	function getCurrentLayerName(){
-		return getLayerName(memory.currentLayer);
-	}
-	
 	function getCurrentComOvers(){
 		return getLayerComOvers(memory.currentLayer);
 	}
 	
+	function addToCurrentComOvers(comOver){
+		let list = getLayerComOvers(memory.currentLayer);
+		if(list === null)
+			return null;
+		list.push(comOver);
+		return comOver;
+	}
+
 	function removeComOver(comOver){
 		if (!comOver) return null;
 		let comovers = getCurrentComOvers();
@@ -201,7 +205,7 @@ var Memory = (function(){
 		return null;
 	}
 
-	function RewriteCommentFile(i, body){
+	function rewriteCommentFile(i, body){
 		
 		function generateMemoryCommentFileName(i){
 			let imageFullName = getFullImageName(i);
@@ -214,14 +218,14 @@ var Memory = (function(){
 			
 		if(i < 0 || i >= memory.filenames.images.length){
 			console.log(
-				'Bad param for RewriteCommentFile: ' + i);
+				'Bad param for rewriteCommentFile: ' + i);
 			return false;
 		}
 		let filename = memory.filenames.jsonfiles[i];
 		if(filename === undefined || filename === null)
 			filename = generateMemoryCommentFileName(i);
 		if(filename === null){
-			console.log('RewriteCommentFile failed: ' +
+			console.log('rewriteCommentFile failed: ' +
 				'image name is null. Index in question: ' + i);
 			return false;
 		}
@@ -230,18 +234,17 @@ var Memory = (function(){
 		return true;
 	}
 	
-	function TruncateCommentFiles(i){
-		if(i >= 0 && i < memory.filenames.jsonfiles.length){
-			if(i < memory.filenames.images.length)
-				console.log('Warning, ' +
-					'TruncateCommentFilesList may cut out ' +
-					'too much. Images: ' +
-					memory.filenames.images.length + 
-					', json Files: ' + i);
+	async function equalizeFiles(addJsonFun){
+		let imagesNum = memory.filenames.images.length,
+		commentsNum = memory.filenames.jsonfiles.length;
+		if(imagesNum <	commentsNum)
 			memory.filenames.jsonfiles.length = i;
+		if(imagesNum >commentsNum) {
+			for(let i = commentsNum; i < imagesNum; i++)
+				await addJsonFun(i);
 		}
 	}
-	
+
 	function initForSingleImage(filename){
 		memory.archive = new JSZip();
 		imageName = DEFAULT_ROOT_FOLDER_NAME + '/'
@@ -268,45 +271,25 @@ var Memory = (function(){
 	function removeDefaultLayer(){
 		//if(!confirm(Language.getPhrase(
 			//'LoseDefaultLayerConfirm'))) return;
-		if(!memory.archive && memory.openLayers.length == 1){
+		if(!memory.archive){
 			memory.openLayers = [];
 		}
 	
 	}
 	
-	return {
-		clearArchive: clearArchive,
-		isClear: isClear,
-		clearLayers: clearLayers,
-		clearCurrentLayer: clearCurrentLayer,
+	return {clearArchive, isClear, clearLayers,
+		clearCurrentLayer, addLayer, removeLayer,
 		//clear: clear,
-		addLayer: addLayer,
-		removeLayer: removeLayer,
-		getArchive: getArchive,
-		getCurrentLayer: getCurrentLayer,
-		setCurrentLayer: setCurrentLayer,
-		getNextLayer: getNextLayer,
-		setNextLayer: setNextLayer,
-		getCurrentFile: getCurrentFile,
-		setCurrentFile: setCurrentFile,
-		getFullImageName: getFullImageName,
-		getImageNameNoPath: getImageNameNoPath,
-		getFullCommentFileName: getFullCommentFileName,
-		getFullCurrentCommentFileName: getFullCurrentCommentFileName,
-		getLayersNumber: getLayersNumber,
-		getLayers: getLayers,
-		getImagesNumber: getImagesNumber,
-		getCommentFilesNumber: getCommentFilesNumber,
-		setLayerName: setLayerName,
-		getCurrentLayerName: getCurrentLayerName,
-		getCurrentComOvers: getCurrentComOvers,
-		removeComOver: removeComOver,
-		RewriteCommentFile: RewriteCommentFile,
-		TruncateCommentFiles: TruncateCommentFiles,
-		initForSingleImage: initForSingleImage,
-		initForArchive: initForArchive,
-		removeDefaultLayer: removeDefaultLayer,
-	}
+		getArchive, getCurrentLayerIndex,
+		setCurrentLayerIndex, getNextLayer, setNextLayer,
+		getCurrentFileIndex, setCurrentFileIndex,
+		getFullImageName, getImageNameNoPath,
+		getFullCurrentCommentFileName, getLayersNumber,
+		getLayers, getImagesNumber, getCommentFilesNumber,
+		setLayerName, getCurrentComOvers, removeComOver,
+		rewriteCommentFile, equalizeFiles,
+		initForSingleImage, initForArchive,
+		removeDefaultLayer, addToCurrentComOvers};
 }())
 
 function Layer(name, list){

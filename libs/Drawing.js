@@ -272,11 +272,7 @@ var Drawing = (function(){
         initOverlay(drawing, ok);
     }
     
-    return {
-        canvasOnMouseMove: canvasOnMouseMove,
-        canvasOnMouseDown: canvasOnMouseDown,
-        canvasOnMouseUp: canvasOnMouseUp,
-        canvasOnMouseLeave,canvasOnMouseLeave,
-        addDragAndResize: addDragAndResize
-    }
+    return {canvasOnMouseMove, canvasOnMouseDown,
+        canvasOnMouseUp, canvasOnMouseLeave,
+        addDragAndResize};
 }());

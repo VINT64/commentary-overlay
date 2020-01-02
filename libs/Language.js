@@ -104,13 +104,7 @@ var Language = (function(){
 			currentLanguage = 'en';
 	}
 	
-
-	return {
-		applyCurrent: applyCurrent,
-		set: set,
-		getPhrase: getPhrase,
-		getList: getList,
-		init: init
-	}
+	return {applyCurrent, set, getPhrase,
+		getList, init};
 }());
 

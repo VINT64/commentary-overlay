@@ -23,12 +23,8 @@ var ParseUtil = (function(){
 		return s.match(/(.+\/)?(?:[^\/]+)?/)[1];
 	}
 	
-	return {
-		getExtension: getExtension,
-		getFilename: getFilename,
-		isImageMime: isImageMime,
-		getPath: getPath
-	}
+	return {getExtension, getFilename,
+		isImageMime, getPath};
 }())
 
 

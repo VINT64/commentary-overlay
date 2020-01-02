@@ -31,11 +31,6 @@ var Document = (function(){
 			el.textContent = text;
 	}
 
-	return {
-		getElement: getElement,
-		newElement: newElement,
-		clear: clear,
-		createText: createText,
-		setText: setText
-	}
+	return {getElement, newElement, clear,
+		createText, setText};
 }());

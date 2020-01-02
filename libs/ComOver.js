@@ -107,36 +107,36 @@ function ComOver(x, y, width, height, text, editorMode,
 			obj.dataset.index = index;
 	}
 	//accessible functions
-	function getComment(){return this.commentDiv;}
-	function getOverlay(){
+	this.getComment = function(){return this.commentDiv;}
+	this.getOverlay = function(){
 		return this.commentOverlayDiv;
 	}
-    function getHandles(){
+    this.getHandles = function(){
         return [this.nwHandle, this.seHandle];
 	}
-	function getNWHandle(){
+	this.getNWHandle = function(){
 		return this.nwHandle;
 	}
-	function getSEHandle(){
+	this.getSEHandle = function(){
 		return this.seHandle;
 	}
-	function notComplete(){
+	this.notComplete = function(){
 		return !this.commentOverlayDiv
 		|| !this.commentDiv;
 	}
-	function getText(){
+	this.getText = function(){
 		if(!this.commentDiv)
 			return null;
 		return this.commentDiv.textContent;
 	}
-	function setText(text){
+	this.setText = function(text){
 		if(text === null
 			|| !this.commentDiv)
 			return null;
 		this.commentDiv.textContent = text;
 		return text;
 	}
-	function using(){
+	this.using = function(){
 		useComment(this.commentDiv);
 		useOverlay(this.commentOverlayDiv);
 		for (handle of this.getHandles())
@@ -145,7 +145,7 @@ function ComOver(x, y, width, height, text, editorMode,
 			USING_CLASS, true);
 		
 	}
-	function release(){
+	this.release = function(){
 		releaseComment(this.commentDiv);
 		releaseOverlay(this.commentOverlayDiv);
 		for (handle of this.getHandles())
@@ -153,20 +153,20 @@ function ComOver(x, y, width, height, text, editorMode,
 		Element.toggleClass(this.commentOverlayDiv,
 			USING_CLASS, false);
 	}
-	function move(x, y){
+	this.move = function(x, y){
 		moveAux(this.commentDiv,
 			this.commentOverlayDiv, this.nwHandle,
 			this.seHandle, x, y);
     }
-	function resize(x, y, w, h){
+	this.resize = function(x, y, w, h){
 		resizeAux(this.commentOverlayDiv, w, h);
 		this.move(x, y);
 	}
-	function select(toggle){
+	this.select = function(toggle){
 		Element.toggleClass(this.commentOverlayDiv,
 			SELECTED_CLASS, toggle);
 	}
-	function alwaysVisible(bool){
+	this.alwaysVisible = function(bool){
 
 		function setVisible(com){
 			com.style.visibility = 'visible';
@@ -207,20 +207,6 @@ function ComOver(x, y, width, height, text, editorMode,
 		text);
     setIndex([this.commentOverlayDiv, this.commentDiv,
 		this.nwHandle, this.seHandle], index++); 
-	this.getComment = getComment;
-	this.getOverlay = getOverlay;
-	this.getHandles = getHandles;
-	this.getNWHandle = getNWHandle;
-	this.getSEHandle = getSEHandle;
-	this.notComplete = notComplete;
-	this.getText = getText;
-	this.setText = setText;
-	this.using = using;
-	this.release = release;
-	this.move = move;
-	this.resize = resize;
-	this.select = select;
-	this.alwaysVisible = alwaysVisible;
 	this.alwaysVisible(false);
 	listeners(this);
 }

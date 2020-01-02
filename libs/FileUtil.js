@@ -10,6 +10,18 @@ https://unlicense.org ) */
 //functions from util: 
 
 var FileUtil = (function(){
+
+	function currentFileLayersListToWrite(){
+	
+		let layersList = Memory.getLayers();
+		if(!Array.isArray(layersList)){
+			console.log('currentFileLayersListToWrite ' +
+			'panic, not an array: ' + i);
+				return [];
+		}
+		return JsonUtil.convertLayersList(layersList);
+	}
+
 	function load(file, clean, afterLoading){
 	
 		function getImageSize(index){
@@ -29,9 +41,8 @@ var FileUtil = (function(){
 				if(imageName === null){
 					reject('Image name not retrieved');
 				}
-				let archive = Memory.getArchive();
-				archive.file(imageName).async('blob')
-					.then((blob) => {
+				Memory.getArchive().file(imageName)
+					.async('blob').then((blob) => {
 						f.readAsDataURL(blob);
 					});
 			});
@@ -45,18 +56,13 @@ var FileUtil = (function(){
 			let body = JSON.stringify(new JsonFile1(
 				imageName, size.w, size.h, [defaultLayer]));
 			
-			Memory.RewriteCommentFile(index, body);
+			Memory.rewriteCommentFile(index, body);
 		}
 		
-		async function finishLoading(){
-			let imagesNum = Memory.getImagesNumber();
-			let commentsNum = Memory.getCommentFilesNumber();
-			if(imagesNum <	commentsNum)
-				Memory.TruncateCommentFiles(imagesNum);
-			if(imagesNum >	commentsNum) {
-				for(let i = commentsNum; i < imagesNum; i++)
-					await addDefaultJsonFileToArchive(i);
-			}
+		function finishLoading(){
+			Memory.equalizeFiles(
+				addDefaultJsonFileToArchive).then(
+				afterLoading);
 		}
 		
 		if(!file) return;
@@ -70,7 +76,7 @@ var FileUtil = (function(){
 					imageName,
 					e.target.result,
 					{binary: true});
-					finishLoading().then(afterLoading);
+					finishLoading();
 			}
 			singleImageReader.readAsBinaryString(file);
 			return;
@@ -100,7 +106,7 @@ var FileUtil = (function(){
 			clean();
 			
 			Memory.initForArchive(z, tempImages, tempJsons);
-			finishLoading().then(afterLoading);
+			finishLoading();
 		},
 		(e) => {
 			alert(Language.getPhrase(
@@ -109,15 +115,14 @@ var FileUtil = (function(){
 		});
 	}
 	
-	function saveJson(layers, canvas){
-		if(!canvas) return;
+	function saveJson(width, height){
+		let layers = currentFileLayersListToWrite();
 		let imageName = DEFAULT_IMAGE_NAME;
 		if(Memory.getImagesNumber() > 0)
 			imageName = Memory.getImageNameNoPath(
-				Memory.getCurrentFile());
+				Memory.getCurrentFileIndex());
 		let body = JSON.stringify(new JsonFile1(imageName,
-			canvas.clientWidth, canvas.clientHeight,
-			layers));
+			width, height, layers));
 		let blob = new Blob([body],	
 			{type: 'application/json'});
 		let ext = ParseUtil.getExtension(imageName);
@@ -126,8 +131,8 @@ var FileUtil = (function(){
 		saveAs(blob, fileName);
 	}
 	
-	function save(saveCurrentFileToArchive){
-		saveCurrentFileToArchive().then((archive) => {
+	function save(logError){
+		saveJsonToArchive(logError).then((archive) => {
 			archive.generateAsync({type:'blob'})
 				.then((blob) => {
 					saveAs(blob, '');
@@ -135,10 +140,30 @@ var FileUtil = (function(){
 			});
 	}
 	
-	return {
-		load: load,
-		saveJson: saveJson,
-		save: save
+	function saveJsonToArchive(logError){
+		return new Promise((resolve, reject) => {
+			let f = new FileReader();
+			let filename = 
+				Memory.getFullCurrentCommentFileName();
+			let archive = Memory.getArchive();
+			f.onload = (e) => {
+				let file = JSON.parse(e.target.result);
+				file.layers = 
+					currentFileLayersListToWrite();
+				archive.file(filename,
+					JSON.stringify(file));
+				resolve(archive);
+			};
+			archive.file(filename).async('blob')
+				.then((blob) => {
+					f.readAsText(blob);
+				}, () => {logError(), reject()}
+			);
+			
+		});
 	}	
+
+
+	return {load, saveJson, saveJsonToArchive, save};
 }())
 

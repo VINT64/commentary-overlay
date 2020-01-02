@@ -82,11 +82,7 @@ var JsonUtil = (function(){
 		return json.comments;
 	}
 	
-	return {
-		convertToComOver: convertToComOver,
-		convertLayersList: convertLayersList,
-		getFileLayersList: getFileLayersList,
-		getLayerName: getLayerName,
-		getLayerCommentsList: getLayerCommentsList
-	}
+	return {convertToComOver, convertLayersList,
+		getFileLayersList, getLayerName,
+		getLayerCommentsList};
 }());

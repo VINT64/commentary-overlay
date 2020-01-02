@@ -94,16 +94,7 @@ var Element = (function(){
 			select.remove(i);
 	}
 
-	return {
-		toggleClass: toggleClass,
-		disable: disable,
-		toggleHidden: toggleHidden,
-		newDrawing: newDrawing,
-		newImage: newImage,
-		newTemplate: newTemplate,
-		newOption: newOption,
-		parseCoordinates: parseCoordinates,
-		setCoordinates: setCoordinates,
-		clearSelect: clearSelect,
-	}
+	return {toggleClass, disable, toggleHidden,
+		newDrawing, newImage, newTemplate, newOption,
+		parseCoordinates, setCoordinates, clearSelect};
 }());

@@ -95,10 +95,8 @@ var Page = (function(){
 		}
 	}
 	
-	function selectComOver(comOver, text){
-		// if(page.selectedComOver){
-		// 	page.selectedComOver.select(false);
-		// }
+	function selectComOver(comOver){
+		let text = comOver.getText();
 		page.commentInput.value = text ? text : '';
 		Element.disable(page.removeCommentButton,
 			false);
@@ -117,14 +115,20 @@ var Page = (function(){
 		page.selectedComOver = comOver;
 	}
 	
-	function selectLayer(name, index){
+	function selectLayer(index, focus){
+		if(!page.layerSelect)
+			return;
+		page.layerSelect.selectedIndex = index;
+		let name = page.layerSelect.options[index].value;
 		if(page.layerInput){
 			page.layerInput.value =	name;
+			if(focus){
+				page.layerInput.focus({
+					preventScroll: true
+					});
+				page.layerInput.select();
+			}
 		}
-		if(page.layerSelect && 
-			page.layerSelect.selectedIndex != index)
-			//do not trigger if it's already selected
-			page.layerSelect.selectedIndex = index;
 	}
 	
 	function triggerFileInput(){
@@ -265,13 +269,158 @@ var Page = (function(){
 		};
 	};
 		
-	function getCanvas(){
-		return page.canvasDiv;
+	function getCanvasSize(){
+		if(!page.canvasDiv)
+			return null;
+		return {w: page.canvasDiv.clientWidth,
+			h: page.canvasDiv.clientHeight};
 	}
+
+	function manageImage(blob){
+		imageReader.readAsDataURL(blob);
+	}
+
+	function init(fileLoad, lang, editor, canvasEvents,
+		archivePresent){
+
+		function bind(){
+			for(let key in page){
+				page[key] = Document.getElement(key);
+			}
+		}
+		
+		function initImagePanel(){
+			if(!page.imageDiv || !isInViewerMode()) return;
+			page.imageDiv.onclick = () => {
+				page.allCommentsDiv.style.display = 
+					(page.allCommentsDiv.style.display ==
+						'none') ? 'block' : 'none';
+			};
+		}
+		
+		function initFileInput(fileLoad){
+			
+			function clean(){ 
+				clearImage();
+				clearGallery();
+				fileLoad.removeFileLayers();
+			}
 	
-	function initCanvasDiv(onmousemoveFun, onmousedownFun,
-		onmouseupFun, onmouseleaveFun, push,
-		addCommentListeners){
+			function finalize(){
+				disableArchiveButtons(false);
+				fileLoad.onLoadFun();
+			}
+	
+			if(!page.fileInput) return;
+			page.fileInput.onchange = (e) =>
+			fileLoad.loadFun(page.fileInput.files[0],
+					clean, finalize);
+		}
+
+		function initLanguage(lang){
+			
+			function fillLanguageSelect(list){
+				if(!page.languageSelect) return;
+				for(const lang of list){
+					let option = Element.newOption(lang);
+					page.languageSelect.add(option);
+				}
+			}
+		
+			fillLanguageSelect(lang.list);
+			lang.apply(Page.applyLanguage);
+
+		}
+
+		function initEditorMode(editor){
+
+			function initImagePadding(){
+				if(!page.canvasDiv || !page.imageDiv) return;
+				let style = getComputedStyle(page.canvasDiv);
+				page.imageDiv.style.padding = style.borderWidth;
+			}
+			
+			function initCommentInput(noPropagate){
+				if(!page.commentInput) return;
+				page.commentInput.onkeydown = (e) => {
+					for(key of noPropagate)
+						if(e.keyCode == key)
+							e.stopPropagation();
+				};
+				page.commentInput.oninput = () => {
+					if(page.selectedComOver)
+						page.selectedComOver.setText(
+							page.commentInput.value);
+				};
+				Element.disable(page.commentInput, true);
+				//Element.toggleHidden(page.commentInput, true);
+			}
+			
+			function initRemoveCommentButton(){
+				Element.disable(page.removeCommentButton,
+					true);
+			}
+			
+			function initSizeInputs(){
+				
+				function updateWidth(){
+					page.canvasDiv.style.width = 
+						page.widthInput.value + 'px';
+					page.imageDiv.style.width = 
+						page.widthInput.value + 'px';
+				}
+				
+				function updateHeight(){
+					page.canvasDiv.style.height = 
+						page.heightInput.value + 'px';
+					page.imageDiv.style.height = 
+						page.heightInput.value + 'px';
+				}
+				
+				if(!page.canvasDiv || !page.imageDiv){
+					console.log('Bad usage of initSizeInputs: ' +
+					'canvas div and image div should be present!');
+					return;
+				}
+				widthInput.value = DEFAULT_CANVAS_SIZE;
+				heightInput.value = DEFAULT_CANVAS_SIZE;
+				if(page.widthInput){
+					updateWidth();
+					page.widthInput.oninput = updateWidth;
+				}
+				if(page.heightInput){
+					updateHeight()
+					page.heightInput.oninput = updateHeight;
+				}
+			}
+		
+			function initLayerInput(renameFun){
+	
+				function setLayerName(index, name){
+					if(!page.layerSelect)
+						return;
+					page.layerSelect
+						.options[index].text = name;
+				}
+	
+				if(!page.layerInput) return;
+				page.layerInput.onkeydown =
+					(e) => e.stopPropagation();
+				page.layerInput.oninput = 
+					(e) => renameFun(page.layerInput.value,
+						setLayerName);
+			}
+						
+			if(!isInEditorMode()) 
+				return;		
+			initImagePadding();		
+			initCommentInput(editor.noPropagate);		
+			initRemoveCommentButton();
+			initSizeInputs();
+			initLayerInput(editor.renameCurrentLayer);
+		}
+	
+		function initCanvasDiv(canvasEvents){
 
 		function addDrawing(dr){
 			if(!page.canvasDiv || !dr) return;
@@ -287,17 +436,17 @@ var Page = (function(){
 			removeDrawing(dr);
 			if(!bool) return;
 			let coords = Element.parseCoordinates(dr);
-			let comOver = new ComOver(coords.x,
-				coords.y, coords.w, coords.h,
-				 '', true, addCommentListeners);
-			push(comOver);
+			let comOver = new ComOver(coords.x, coords.y,
+				coords.w, coords.h, '', true, 
+				canvasEvents.addCommentListeners);
+			canvasEvents.push(comOver);
 			addComOver(comOver);
 		}	
 
 		if(!page.canvasDiv)
 			return;
 		page.canvasDiv.onmousemove = 
-			(e) => onmousemoveFun(e, page.canvasDiv,
+			(e) => canvasEvents.onMouseMove(e, page.canvasDiv,
 				(text) => {
 					if(page.coordinatesInfo)
 						page.coordinatesInfo
@@ -306,183 +455,35 @@ var Page = (function(){
 		page.canvasDiv.onmousedown = (e) => {
 			if (e.button != 0) return null;
 			deselectComOver();
-			let dr = onmousedownFun(e, page.canvasDiv,
+			let dr = canvasEvents.onMouseDown(e, page.canvasDiv,
 					removeDrawing);
 			addDrawing(dr);
 		};
 		page.canvasDiv.onmouseup = (e) => {
-			onmouseupFun(e, initOverlay);
+			canvasEvents.onMouseUp(e, initOverlay);
 		};
 		page.canvasDiv.onmouseleave = (e) => {
-			onmouseleaveFun(e, initOverlay);
+			canvasEvents.onMouseLeave(e, initOverlay);
 		};
 		page.canvasDiv.oncontextmenu = 
 			e => e.preventDefault();
 	}
-	
-	function initEditorMode(noPropagate, renameFun){
 
-		function initImagePadding(){
-			if(!page.canvasDiv || !page.imageDiv) return;
-			let style = getComputedStyle(page.canvasDiv);
-			page.imageDiv.style.padding = style.borderWidth;
-		}
-		
-		function initCommentInput(noPropagate){
-			if(!page.commentInput) return;
-			page.commentInput.onkeydown = (e) => {
-				for(key of noPropagate)
-					if(e.keyCode == key)
-						e.stopPropagation();
-			};
-			page.commentInput.oninput = () => {
-				if(page.selectedComOver)
-					page.selectedComOver.setText(
-						page.commentInput.value);
-			};
-			Element.disable(page.commentInput, true);
-			//Element.toggleHidden(page.commentInput, true);
-		}
-		
-		function initRemoveCommentButton(){
-			Element.disable(page.removeCommentButton,
-				true);
-		}
-		
-		function initSizeInputs(){
-			
-			function updateWidth(){
-				page.canvasDiv.style.width = 
-					page.widthInput.value + 'px';
-				page.imageDiv.style.width = 
-					page.widthInput.value + 'px';
-			}
-			
-			function updateHeight(){
-				page.canvasDiv.style.height = 
-					page.heightInput.value + 'px';
-				page.imageDiv.style.height = 
-					page.heightInput.value + 'px';
-			}
-			
-			if(!page.canvasDiv || !page.imageDiv){
-				console.log('Bad usage of initSizeInputs: ' +
-				'canvas div and image div should be present!');
-				return;
-			}
-			widthInput.value = DEFAULT_CANVAS_SIZE;
-			heightInput.value = DEFAULT_CANVAS_SIZE;
-			if(page.widthInput){
-				updateWidth();
-				page.widthInput.oninput = updateWidth;
-			}
-			if(page.heightInput){
-				updateHeight()
-				page.heightInput.oninput = updateHeight;
-			}
-		}
-	
-		function initLayerInput(renameFun){
-
-			function setLayerName(index, name){
-				if(!page.layerSelect)
-					return;
-				page.layerSelect
-					.options[index].text = name;
-			}
-
-			if(!page.layerInput) return;
-			page.layerInput.onkeydown =
-				(e) => e.stopPropagation();
-			page.layerInput.oninput = 
-				(e) => renameFun(page.layerInput.value,
-					setLayerName);
-		}
-					
-		if(!isInEditorMode()) 
-			return;		
-		initImagePadding();		
-		initCommentInput(noPropagate);		
-		initRemoveCommentButton();
-		initSizeInputs();
-		initLayerInput(renameFun);
+		bind();
+		initImagePanel();
+		initFileInput(fileLoad);
+		initLanguage(lang);
+		initEditorMode(editor);
+		initCanvasDiv(canvasEvents);
+		disableArchiveButtons(!archivePresent);
 	}
 
-	function bind(){
-		for(let key in page){
-			page[key] = Document.getElement(key);
-		}
-	}
-	
-	function initImagePanel(){
-		if(!page.imageDiv || !isInViewerMode()) return;
-		page.imageDiv.onclick = () => {
-			page.allCommentsDiv.style.display = 
-				(page.allCommentsDiv.style.display ==
-					'none') ? 'block' : 'none';
-		};
-	}
-	
-	function initFileInput(loadFileFun, removeFileLayers,
-		finalSelect){
-		
-		function clean(){ 
-			clearImage();
-			clearGallery();
-			removeFileLayers();
-		}
-
-		function finalize(){
-			disableArchiveButtons(false);
-			finalSelect();
-		}
-
-		if(!page.fileInput) return;
-		page.fileInput.onchange = (e) =>
-			loadFileFun(page.fileInput.files[0],
-				clean, finalize)
-	}
-	
-	function fillLanguageSelect(list){
-		if(!page.languageSelect) return;
-		for(const lang of list){
-			let option = Element.newOption(lang);
-			page.languageSelect.add(option);
-		}
-	}
-	
-	function manageImage(blob){
-		imageReader.readAsDataURL(blob);
-	}
-
-	return {
-		clear: clear,
-		isInEditorMode: isInEditorMode,
-		deselectComOver,
-		removeSelectedComOver: removeSelectedComOver,
-		addComOver: addComOver,
-		selectComOver: selectComOver,
-		selectLayer: selectLayer,
-		triggerFileInput: triggerFileInput,
-		fillFileInfo: fillFileInfo,
-		clearGallery: clearGallery,
-		disableArchiveButtons: disableArchiveButtons,
-		clearArchive: clearArchive,
-		clearLayersSelect: clearLayersSelect,
-		clearCanvas: clearCanvas,
-		applyLanguage: applyLanguage,
-		updateLanguage: updateLanguage,
-		addLayer: addLayer,
-		removeLayer: removeLayer,
-		getLayerIndex: getLayerIndex,
-		getCanvas: getCanvas,
-		initCanvasDiv: initCanvasDiv,
-		initEditorMode: initEditorMode,
-		bind: bind,
-		initImagePanel: initImagePanel,
-		initFileInput: initFileInput,
-		fillLanguageSelect: fillLanguageSelect,
-		manageImage: manageImage
-	}
+	return {clear, isInEditorMode, deselectComOver,
+		removeSelectedComOver, addComOver, selectComOver,
+		selectLayer, triggerFileInput, fillFileInfo,
+		clearGallery, clearArchive, clearLayersSelect,
+		clearCanvas, applyLanguage, updateLanguage,
+		addLayer, removeLayer, getLayerIndex,
+		getCanvasSize, manageImage, init};
 }())
 

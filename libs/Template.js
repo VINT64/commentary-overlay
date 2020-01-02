@@ -154,8 +154,6 @@ var Template = (function(){
 			.content.firstChild;
 	}
 
-	return {
-		get: get
-	}
+	return {get};
 }());
 
