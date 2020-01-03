@@ -40,67 +40,47 @@ var Main = (function(){
 	}
 	
 	function selectLayer(i, focus){
-		let LayersNumber = Memory.getLayersNumber();
-		if(i < 0 || i >= LayersNumber){
-			console.log('Tried to select layer: ' + i +
-				', number of layers: ' + LayersNumber +
-				'\nresetting current Layer to 0...');
-			Memory.setCurrentLayerIndex(0);
-			return;
-		}
-		if(!Memory.setCurrentLayerIndex(i)){
+		if(!Memory.selectLayer(i)){
 			console.log('Failed to select layer: ' + i);
 			return;
 		}
-		Page.deselectComOver();
-		Page.clearGallery();
-		
 		let comovers = Memory.getCurrentComOvers(); // i
-		comovers.forEach(comOver => {
-			Page.addComOver(comOver);
-		});
-		Page.selectLayer(i, focus);
+		Page.selectLayer(i, comovers, focus);
 	}	
 	
-	const jsonReader = new FileReader();
+	function selectFile(i){
+	
+		const jsonReader = new FileReader();
 
-	jsonReader.onload = manageLoadedJson;
-	
-	function manageLoadedJson(event){
-	
-		function addComment(jsonComment, list){
-			let comOver = JsonUtil
-				.convertToComOver(jsonComment,
-					Page.isInEditorMode(),
-					addCommentListeners
-			);
-			list.push(comOver);
-		}
+		jsonReader.onload = function(event){
 		
-		removeFileLayers();		
-	
-		let json = JSON.parse(event.target.result);
-		let layers = JsonUtil.getFileLayersList(json);
-		layers.forEach(jsonLayer => {
-			let comovers = [];
-			JsonUtil.getLayerCommentsList(jsonLayer)
-				.forEach(json => {
-					addComment(json, comovers);
-				}
-			);
-			addLayer(JsonUtil.getLayerName(jsonLayer),
-				comovers);
-		});
-		selectLayer(Memory.getNextLayer(), false);
-		Memory.setNextLayer(0);
-	}
+			function addComment(jsonComment, list){
+				let comOver = JsonUtil
+					.convertToComOver(jsonComment,
+						Page.isInEditorMode(),
+						addCommentListeners
+				);
+				list.push(comOver);
+			}
+			
+			removeFileLayers();		
+		
+			let json = JSON.parse(event.target.result);
+			let layers = JsonUtil.getFileLayersList(json);
+			layers.forEach(jsonLayer => {
+				let comovers = [];
+				JsonUtil.getLayerCommentsList(jsonLayer)
+					.forEach(json => {
+						addComment(json, comovers);
+					}
+				);
+				addLayer(JsonUtil.getLayerName(jsonLayer),
+					comovers);
+			});
+			selectLayer(Memory.getNextLayer(), false);
+			Memory.setNextLayer(0);
+		}	
 
-	function selectFile(i){ 
-	
-		function useJSONReader(blob){
-			jsonReader.readAsText(blob);
-		}
-		
 		let imageNumber = Memory.getImagesNumber();
 		if(i < 0 || i >= imageNumber){
 			console.log('Tried to select image: ' + i +
@@ -119,8 +99,8 @@ var Main = (function(){
 				'current image name is null');
 			return;
 		}
-		Page.fillFileInfo(currentImage +	' ' + (currentFile + 1)
-			+ '/' + imageNumber + ' ');
+		Page.fillFileInfo(currentImage + ' ' + 
+			(currentFile + 1) + '/' + imageNumber + ' ');
 	
 		let archive = Memory.getArchive();
 		archive.file(currentImage)
@@ -137,7 +117,8 @@ var Main = (function(){
 				return;
 			}
 			archive.file(currentCommentFile)
-				.async('blob').then(useJSONReader,
+				.async('blob').then(
+					(blob) => jsonReader.readAsText(blob),
 					logError
 				);
 		}
@@ -203,7 +184,7 @@ var Main = (function(){
 				'removeArchiveConfirm'))) return;
 			Memory.clearArchive();
 			Page.clearArchive();
-		}	
+		}
 	
 		function saveJson(){
 			let size = Page.getCanvasSize();
@@ -215,12 +196,13 @@ var Main = (function(){
 		}
 
 		function removeCurrentLayer(){
-			if(Memory.getLayersNumber() == 1){
+			if(Memory.isLastLayer()){
 				alert(Language.getPhrase(
 					'lastLayerAlert'));
 				return;
 			}
-			let layerIndex = Page.getLayerIndex();
+			let layerIndex =
+				Memory.getCurrentLayerIndex();
 			if(layerIndex < 0)
 				return;
 			if(!confirm(Language.getPhrase(
@@ -233,12 +215,14 @@ var Main = (function(){
 
 		function clearCurrentLayer(){
 			Memory.clearCurrentLayer();
-			Page.clearCanvas();
+			Page.clearCanvas(() => 
+				confirm(Language.getPhrase(
+				'removeAllCommentsFromLayerConfirm')));
 		}
 
 		function removeSelectedComOver(){
-			Page.removeSelectedComOver(
-				Memory.removeComOver);
+			Memory.removeComOver(
+				Page.removeSelectedComOver());
 		}
 
 		function bindKeys(){
@@ -313,13 +297,8 @@ var Main = (function(){
 		let editor = {
 			noPropagate: [LEFT_ARROW_KEY,
 				RIGHT_ARROW_KEY],
-			renameCurrentLayer: (name, pageRename) => {
-				let currentLayerIndex = 
-					Memory.getCurrentLayerIndex();
-				pageRename(currentLayerIndex, name);
-				Memory.setLayerName(
-					currentLayerIndex, name);
-			}
+			renameCurrentLayer: 
+				Memory.renameCurrentLayer
 		}
 
 		let canvasEvents = {

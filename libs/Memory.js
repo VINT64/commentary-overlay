@@ -71,7 +71,7 @@ var Memory = (function(){
 		return memory.currentLayer;
 	}
 	
-	function setCurrentLayerIndex(i){
+	function selectLayer(i){
 		if(i < 0 || i >= memory.openLayers.length){
 			console.log(
 				'Bad param for setCurrentLayerIndex: ' + i);
@@ -140,8 +140,8 @@ var Memory = (function(){
 		return getFullCommentFileName(memory.currentFile);
 	}
 	
-	function getLayersNumber(){
-		return memory.openLayers.length;
+	function isLastLayer(){
+		return memory.openLayers.length == 1;
 	}
 	
 	function getLayers(){
@@ -169,17 +169,14 @@ var Memory = (function(){
 		return getLayer(i).getComOversList();
 	}
 	
-	function getLayerName(i){
-		return getLayer(i).getName();
-	}
-	
-	function setLayerName(i, name){
-		let layer = getLayer(i);
+	function renameCurrentLayer(name){
+		let layer = getLayer(memory.currentLayer);
 		if(layer === null)
-			return false;
-		return layer.setName(name);
+			return -1;
+		return layer.setName(name) ? memory.currentLayer :
+			-1;
 	}
-	
+
 	function getCurrentComOvers(){
 		return getLayerComOvers(memory.currentLayer);
 	}
@@ -256,6 +253,8 @@ var Memory = (function(){
 	
 	function initForArchive(archive, imagesList,
 		commentFilesList){
+		imagesList.sort();
+		commentFilesList.sort();
 		memory.filenames = new Filenames(imagesList,
 			commentFilesList);
 		memory.archive = archive; 
@@ -281,12 +280,12 @@ var Memory = (function(){
 		clearCurrentLayer, addLayer, removeLayer,
 		//clear: clear,
 		getArchive, getCurrentLayerIndex,
-		setCurrentLayerIndex, getNextLayer, setNextLayer,
+		selectLayer, getNextLayer, setNextLayer,
 		getCurrentFileIndex, setCurrentFileIndex,
 		getFullImageName, getImageNameNoPath,
-		getFullCurrentCommentFileName, getLayersNumber,
+		getFullCurrentCommentFileName, isLastLayer,
 		getLayers, getImagesNumber, getCommentFilesNumber,
-		setLayerName, getCurrentComOvers, removeComOver,
+		renameCurrentLayer, getCurrentComOvers, removeComOver,
 		rewriteCommentFile, equalizeFiles,
 		initForSingleImage, initForArchive,
 		removeDefaultLayer, addToCurrentComOvers};

@@ -100,9 +100,6 @@ var FileUtil = (function(){
 				return;
 			}
 			
-			tempJsons.sort();
-			tempImages.sort();
-			
 			clean();
 			
 			Memory.initForArchive(z, tempImages, tempJsons);

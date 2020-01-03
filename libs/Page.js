@@ -45,11 +45,39 @@ var Page = (function(){
 	}
 
 	function deselectComOver(){
+		if(!page.selectedComOver)
+			return;
 		selectAux(page.selectedComOver, false);
 		page.selectedComOver = null;
 		Element.disable(page.commentInput, true);
 		// Element.toggleHidden(page.commentInput, true);
 		Element.disable(page.removeCommentButton, true);
+	}
+	
+	function selectComOver(comOver){
+		let text = comOver.getText();
+		page.commentInput.value = text ? text : '';
+		Element.disable(page.removeCommentButton,
+			false);
+		Element.disable(page.commentInput, false);
+		//Element.toggleHidden(page.commentInput, false);
+		if(page.commentInput){
+			// let ov = comOver.getOverlay();
+			// let coords = ov.getBoundingClientRect();
+			// Element.setCoordinates(page.commentInput, coords.left + coords.width + 25, coords.top, 0, 0);
+
+			page.commentInput.focus({
+				preventScroll: true
+			  });
+		}
+		
+		// let comment = comOver.getComment();
+		// comment.onmousedown = e => e.stopPropagation();
+		// comment.setAttribute('contenteditable', true);
+
+		selectAux(page.selectedComOver, false);
+		selectAux(comOver, true);
+		page.selectedComOver = comOver;
 	}
 	
 	function removeComOver(comOver){
@@ -65,10 +93,11 @@ var Page = (function(){
 		}
 	}
 
-	function removeSelectedComOver(remove){
-		removeComOver(page.selectedComOver);
-		remove(page.selectedComOver);
+	function removeSelectedComOver(){
+		let ret = page.selectedComOver;
+		removeComOver(ret);
 		deselectComOver();
+		return ret;
 	}
 	
 	function addComOver(comOver){
@@ -95,27 +124,14 @@ var Page = (function(){
 		}
 	}
 	
-	function selectComOver(comOver){
-		let text = comOver.getText();
-		page.commentInput.value = text ? text : '';
-		Element.disable(page.removeCommentButton,
-			false);
-		Element.disable(page.commentInput, false);
-		//Element.toggleHidden(page.commentInput, false);
-		if(page.commentInput){
-			// let ov = comOver.getOverlay();
-			// let coords = ov.getBoundingClientRect();
-			// Element.setCoordinates(page.commentInput, coords.left + coords.width + 25, coords.top, 0, 0);
-			page.commentInput.focus({
-				preventScroll: true
-			  });
-		}
-		selectAux(page.selectedComOver, false);
-		selectAux(comOver, true);
-		page.selectedComOver = comOver;
-	}
-	
-	function selectLayer(index, focus){
+	function selectLayer(index, comovers, focus){
+
+		deselectComOver();
+		clearGallery();
+		comovers.forEach(comOver => {
+			addComOver(comOver);
+		});
+		
 		if(!page.layerSelect)
 			return;
 		page.layerSelect.selectedIndex = index;
@@ -199,10 +215,9 @@ var Page = (function(){
 		Element.clearSelect(page.layerSelect);
 	}
 	
-	function clearCanvas(){
+	function clearCanvas(confirm){
 		if(!isInEditorMode() ||
-			!confirm(Language.getPhrase(
-			'removeAllCommentsFromLayerConfirm')))
+			!confirm())
 			return;
 		clearGallery();
 	}	
@@ -407,8 +422,16 @@ var Page = (function(){
 				page.layerInput.onkeydown =
 					(e) => e.stopPropagation();
 				page.layerInput.oninput = 
-					(e) => renameFun(page.layerInput.value,
-						setLayerName);
+					(e) => {
+						let i = renameFun(page.layerInput.value);
+						if(i == -1){
+							console.log("Some rename problem: " + 
+							page.layerInput.value
+							);
+							return;
+						}
+						setLayerName(i, page.layerInput.value);
+					}
 			}
 						
 			if(!isInEditorMode()) 
@@ -479,9 +502,9 @@ var Page = (function(){
 	}
 
 	return {clear, isInEditorMode, deselectComOver,
-		removeSelectedComOver, addComOver, selectComOver,
+		removeSelectedComOver, selectComOver,
 		selectLayer, triggerFileInput, fillFileInfo,
-		clearGallery, clearArchive, clearLayersSelect,
+		clearArchive, clearLayersSelect,
 		clearCanvas, applyLanguage, updateLanguage,
 		addLayer, removeLayer, getLayerIndex,
 		getCanvasSize, manageImage, init};
