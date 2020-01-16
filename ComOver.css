@@ -80,7 +80,7 @@ div#allCommentsDiv {
 
 div.commentDiv {
 	position: absolute;
-	white-space:pre;
+	white-space: pre;
 	text-align: left;
 }
 

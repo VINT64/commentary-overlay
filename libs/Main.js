@@ -9,10 +9,10 @@ const DEFAULT_IMAGE_NAME = 'default';
 
 var Main = (function(){
 
-	const LEFT_ARROW_KEY = 37;
-	const RIGHT_ARROW_KEY = 39;
-	const ESCAPE_KEY = 27;
-	const DELETE_KEY = 46;
+	const LEFT_ARROW_KEY = 'ArrowLeft';
+	const RIGHT_ARROW_KEY = 'ArrowRight';
+	const ESCAPE_KEY = 'Escape';
+	const DELETE_KEY = 'Delete';
 
 	function logError(error){
 		console.log(error.message);
@@ -21,6 +21,7 @@ var Main = (function(){
 	function addCommentListeners(comOver){
 		if(!Page.isInEditorMode())
 			return;
+		//comOver.setNoPropagate([LEFT_ARROW_KEY, RIGHT_ARROW_KEY]);
 		Drawing.addDragAndResize(comOver,
 			Page.selectComOver);
 	}
@@ -228,7 +229,7 @@ var Main = (function(){
 		function bindKeys(){
 			
 			window.onkeydown = (e) => {
-				switch(e.keyCode){
+				switch(e.key){
 					case ESCAPE_KEY: 
 						Page.deselectComOver(); break;
 					case LEFT_ARROW_KEY: 
@@ -340,7 +341,7 @@ var Main = (function(){
 		initMode(root);
 		
 	}
-	
+
 	return {launch};
 }());
 

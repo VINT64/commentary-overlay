@@ -18,13 +18,17 @@ var Element = (function(){
 			el.classList.remove(cl);
 	}
 
-	function disable(element, flag){
+	function attribute(element, attribute, flag){
 		if(!element) return;
 		if(flag)
 			element.setAttribute(
-				DISABLED_ATTRIBUTE, true);
+				attribute, true);
 		else
-			element.removeAttribute(DISABLED_ATTRIBUTE);
+			element.removeAttribute(attribute);
+	}
+
+	function disable(element, flag){
+		attribute(element, DISABLED_ATTRIBUTE, flag);
 	}
 
 	function toggleHidden(el, flag){
@@ -94,7 +98,7 @@ var Element = (function(){
 			select.remove(i);
 	}
 
-	return {toggleClass, disable, toggleHidden,
+	return {toggleClass, attribute, disable, toggleHidden,
 		newDrawing, newImage, newTemplate, newOption,
 		parseCoordinates, setCoordinates, clearSelect};
 }());

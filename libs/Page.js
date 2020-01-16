@@ -41,7 +41,6 @@ var Page = (function(){
 	function selectAux(comOver, bool){
 		if(!comOver) return;
 		comOver.select(bool);
-		comOver.alwaysVisible(bool);
 	}
 
 	function deselectComOver(){
@@ -68,12 +67,9 @@ var Page = (function(){
 
 			page.commentInput.focus({
 				preventScroll: true
-			  });
+			});
 		}
 		
-		// let comment = comOver.getComment();
-		// comment.onmousedown = e => e.stopPropagation();
-		// comment.setAttribute('contenteditable', true);
 
 		selectAux(page.selectedComOver, false);
 		selectAux(comOver, true);
@@ -359,7 +355,7 @@ var Page = (function(){
 				if(!page.commentInput) return;
 				page.commentInput.onkeydown = (e) => {
 					for(key of noPropagate)
-						if(e.keyCode == key)
+						if(e.key == key)
 							e.stopPropagation();
 				};
 				page.commentInput.oninput = () => {
